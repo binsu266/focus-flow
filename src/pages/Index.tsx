@@ -1,13 +1,31 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import AffirmationModal from "@/components/AffirmationModal";
+import OneThingModal from "@/components/OneThingModal";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [showAffirmation, setShowAffirmation] = useState(true);
+  const [showOneThing, setShowOneThing] = useState(false);
+
+  const handleAffirmationClose = () => {
+    setShowAffirmation(false);
+    setShowOneThing(true);
+  };
+
+  const handleOneThingClose = (value: string) => {
+    setShowOneThing(false);
+    // Store the one-thing value (could be in localStorage or state management)
+    localStorage.setItem("todayOneThing", value);
+    // Redirect to main tracker page
+    navigate("/");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <>
+      <AffirmationModal isOpen={showAffirmation} onClose={handleAffirmationClose} />
+      <OneThingModal isOpen={showOneThing} onClose={handleOneThingClose} />
+    </>
   );
 };
 
