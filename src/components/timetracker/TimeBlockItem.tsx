@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Pencil, MessageSquare } from "lucide-react";
 import { Category, TimeBlock } from "./types";
@@ -46,6 +46,15 @@ const TimeBlockItem = ({
   const longPressTriggeredRef = useRef(false);
   const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (pressTimerRef.current) {
+        clearTimeout(pressTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     longPressTriggeredRef.current = false;
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
@@ -56,21 +65,34 @@ const TimeBlockItem = ({
       longPressTriggeredRef.current = true;
       setIsDragging(true);
       onLongPress(block.id);
+      
+      // Start listening for drag events on document
+      document.addEventListener("mousemove", handleDragMove);
+      document.addEventListener("mouseup", handleDragEnd);
+      document.addEventListener("touchmove", handleDragMove);
+      document.addEventListener("touchend", handleDragEnd);
     }, 500);
   };
 
-  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!longPressTriggeredRef.current || !isDragging) return;
-    
+  const handleDragMove = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     const deltaY = clientY - startYRef.current;
     const deltaHours = Math.round((deltaY / hourHeight) * 4) / 4; // 15-minute snap
     
-    const newStartHour = Math.max(0, Math.min(23 - block.duration + 1, startValueRef.current.startHour + deltaHours));
-    if (newStartHour !== block.startHour && newStartHour >= 0 && newStartHour + block.duration <= 24) {
+    const newStartHour = Math.max(0, Math.min(24 - startValueRef.current.duration, startValueRef.current.startHour + deltaHours));
+    if (newStartHour >= 0 && newStartHour + startValueRef.current.duration <= 24) {
       onUpdate?.(block.id, { startHour: newStartHour });
     }
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    longPressTriggeredRef.current = false;
+    document.removeEventListener("mousemove", handleDragMove);
+    document.removeEventListener("mouseup", handleDragEnd);
+    document.removeEventListener("touchmove", handleDragMove);
+    document.removeEventListener("touchend", handleDragEnd);
   };
 
   const handleMouseUp = () => {
@@ -78,7 +100,10 @@ const TimeBlockItem = ({
       clearTimeout(pressTimerRef.current);
       pressTimerRef.current = null;
     }
-    setIsDragging(false);
+    // Only reset if we haven't started dragging
+    if (!longPressTriggeredRef.current) {
+      setIsDragging(false);
+    }
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -148,24 +173,24 @@ const TimeBlockItem = ({
       <PopoverTrigger asChild>
         <motion.div
           ref={containerRef}
-          className={`absolute ${compact ? "inset-x-0.5" : "left-1 right-1"} ${category?.color} rounded-lg shadow-sm z-10 cursor-pointer ${
-            isSelected ? "ring-2 ring-primary ring-offset-2" : ""
-          } ${compact ? "rounded-sm" : ""} ${isResizing || isDragging ? "z-20" : ""} ${isDragging ? "opacity-80 shadow-lg" : ""}`}
+          className={`absolute ${compact ? "inset-x-0.5" : "left-1 right-1"} ${category?.color} rounded-lg shadow-sm cursor-pointer ${
+            isSelected ? "ring-2 ring-primary ring-offset-2 z-20" : "z-10"
+          } ${compact ? "rounded-sm" : ""} ${isDragging ? "z-30 opacity-90 shadow-xl scale-105" : ""}`}
           style={{
             height: `${block.duration * hourHeight}px`,
             top: 0,
           }}
           initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: isDragging ? 1.05 : 1, opacity: 1 }}
+          animate={{ 
+            scale: isDragging ? 1.05 : 1, 
+            opacity: isDragging ? 0.9 : 1,
+          }}
           whileHover={{ scale: compact ? 1 : 1.02 }}
-          whileTap={{ scale: 0.98 }}
           onClick={handleClick}
           onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onTouchStart={handleMouseDown}
-          onTouchMove={handleMouseMove}
           onTouchEnd={handleMouseUp}
         >
           {showLabel ? (

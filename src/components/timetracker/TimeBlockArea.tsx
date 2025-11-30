@@ -100,34 +100,39 @@ const TimeBlockArea = ({
   };
 
   const renderDayView = () => (
-    <div className="flex-1 relative">
+    <div className="flex-1 relative" style={{ height: `${24 * hourHeight}px` }}>
+      {/* Hour grid lines */}
       {hours.map((hour) => (
         <div
           key={hour}
-          className="border-b border-border/50 relative"
-          style={{ height: `${hourHeight}px` }}
-        >
-          {filteredBlocks
-            .filter((block) => block.startHour === hour)
-            .map((block) => {
-              const category = categories.find((c) => c.id === block.categoryId);
-              return (
-                <TimeBlockItem
-                  key={block.id}
-                  block={block}
-                  category={category}
-                  categories={categories}
-                  hourHeight={hourHeight}
-                  isSelected={selectedBlockId === block.id}
-                  showLabel={true}
-                  onSelect={onBlockSelect}
-                  onLongPress={onBlockLongPress}
-                  onUpdate={onBlockUpdate}
-                />
-              );
-            })}
-        </div>
+          className="absolute left-0 right-0 border-b border-border/50"
+          style={{ top: `${hour * hourHeight}px`, height: `${hourHeight}px` }}
+        />
       ))}
+      
+      {/* Time blocks - rendered with absolute positioning */}
+      {filteredBlocks.map((block) => {
+        const category = categories.find((c) => c.id === block.categoryId);
+        return (
+          <div
+            key={block.id}
+            className="absolute left-0 right-0"
+            style={{ top: `${block.startHour * hourHeight}px` }}
+          >
+            <TimeBlockItem
+              block={block}
+              category={category}
+              categories={categories}
+              hourHeight={hourHeight}
+              isSelected={selectedBlockId === block.id}
+              showLabel={true}
+              onSelect={onBlockSelect}
+              onLongPress={onBlockLongPress}
+              onUpdate={onBlockUpdate}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 
