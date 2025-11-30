@@ -145,6 +145,19 @@ const TimeTracker = () => {
                 )
               );
             }}
+            onBlockCreate={(categoryId, startHour, duration) => {
+              const newBlock: TimeBlock = {
+                id: `block-${Date.now()}`,
+                categoryId,
+                startHour,
+                duration,
+                dayOffset: 0,
+                date: selectedDate.toISOString().split("T")[0],
+              };
+              setTimeBlocks((prev) => [...prev, newBlock]);
+              const category = categories.find((c) => c.id === categoryId);
+              toast.success(`${category?.icon} ${category?.name} 블록 생성됨`);
+            }}
           />
         </div>
 

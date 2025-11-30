@@ -1,5 +1,5 @@
-import { useRef, useEffect, useMemo } from "react";
-import { format, startOfWeek, startOfMonth, addDays, getDaysInMonth, differenceInDays } from "date-fns";
+import { useRef, useEffect, useMemo, useState, DragEvent } from "react";
+import { format, startOfWeek, startOfMonth, addDays, getDaysInMonth } from "date-fns";
 import { ko } from "date-fns/locale";
 import TimeRuler from "./TimeRuler";
 import TimeBlockItem from "./TimeBlockItem";
@@ -15,6 +15,7 @@ interface TimeBlockAreaProps {
   onBlockSelect: (blockId: string) => void;
   onBlockLongPress: (blockId: string) => void;
   onBlockUpdate?: (blockId: string, updates: Partial<TimeBlock>) => void;
+  onBlockCreate?: (categoryId: string, startHour: number, duration: number) => void;
 }
 
 const TimeBlockArea = ({
@@ -27,9 +28,12 @@ const TimeBlockArea = ({
   onBlockSelect,
   onBlockLongPress,
   onBlockUpdate,
+  onBlockCreate,
 }: TimeBlockAreaProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dayViewRef = useRef<HTMLDivElement>(null);
   const hours = Array.from({ length: 24 }, (_, i) => i);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const getWeekDays = () => {
     const start = startOfWeek(selectedDate, { weekStartsOn: 0 });
@@ -99,8 +103,39 @@ const TimeBlockArea = ({
     );
   };
 
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const categoryId = e.dataTransfer.getData("categoryId");
+    if (!categoryId || !dayViewRef.current || !onBlockCreate) return;
+
+    const rect = dayViewRef.current.getBoundingClientRect();
+    const y = e.clientY - rect.top + (scrollRef.current?.scrollTop || 0);
+    const startHour = Math.max(0, Math.min(22, Math.floor(y / hourHeight)));
+    
+    onBlockCreate(categoryId, startHour, 2);
+  };
+
   const renderDayView = () => (
-    <div className="flex-1 relative" style={{ height: `${24 * hourHeight}px` }}>
+    <div 
+      ref={dayViewRef}
+      className={`flex-1 relative transition-colors ${isDragOver ? "bg-primary/10" : ""}`}
+      style={{ height: `${24 * hourHeight}px` }}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Hour grid lines */}
       {hours.map((hour) => (
         <div

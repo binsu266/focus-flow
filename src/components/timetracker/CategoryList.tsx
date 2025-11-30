@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, DragEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, ChevronRight, ChevronDown } from "lucide-react";
+import { Play, Pause, ChevronRight, ChevronDown, GripVertical } from "lucide-react";
 import { Category, ActiveRecording } from "./types";
 
 interface CategoryListProps {
@@ -50,6 +50,11 @@ const CategoryList = ({
     }
   };
 
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, categoryId: string) => {
+    e.dataTransfer.setData("categoryId", categoryId);
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
   const renderCategory = (category: Category, isSubCategory = false) => {
     const isRecording = activeRecording?.categoryId === category.id;
     const isExpanded = expandedCategories.includes(category.id);
@@ -59,11 +64,15 @@ const CategoryList = ({
     return (
       <div key={category.id}>
         <motion.div
-          className={`w-full flex items-center gap-2 p-2 rounded-lg bg-card hover:bg-muted transition-colors ${
+          draggable
+          onDragStart={(e) => handleDragStart(e as unknown as DragEvent<HTMLDivElement>, category.id)}
+          className={`w-full flex items-center gap-2 p-2 rounded-lg bg-card hover:bg-muted transition-colors cursor-grab active:cursor-grabbing ${
             isSubCategory ? "ml-4 w-[calc(100%-1rem)]" : ""
           }`}
           whileTap={{ scale: 0.98 }}
         >
+          {/* Drag Handle */}
+          <GripVertical className="w-4 h-4 text-muted-foreground/50" />
           {/* Play/Pause Button */}
           <button
             onClick={() => handlePlayClick(category.id)}
