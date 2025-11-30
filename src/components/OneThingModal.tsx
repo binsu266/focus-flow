@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,17 +6,30 @@ import { Edit3 } from "lucide-react";
 
 interface OneThingModalProps {
   isOpen: boolean;
-  onClose: (value: string) => void;
+  onClose: () => void;
+  onSave: (value: string) => void;
+  initialValue?: string;
 }
 
-const OneThingModal = ({ isOpen, onClose }: OneThingModalProps) => {
-  const [value, setValue] = useState("");
+const OneThingModal = ({ isOpen, onClose, onSave, initialValue = "" }: OneThingModalProps) => {
+  const [value, setValue] = useState(initialValue);
+
+  useEffect(() => {
+    if (isOpen) {
+      setValue(initialValue);
+    }
+  }, [isOpen, initialValue]);
 
   const handleSubmit = () => {
     if (value.trim()) {
-      onClose(value);
+      onSave(value);
       setValue("");
     }
+  };
+
+  const handleClose = () => {
+    setValue("");
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -30,7 +43,10 @@ const OneThingModal = ({ isOpen, onClose }: OneThingModalProps) => {
         exit={{ opacity: 0 }}
       >
         {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#4A5D4A] via-[#3D4E3D] to-[#2D3D2D]" />
+        <div 
+          className="absolute inset-0 bg-gradient-to-br from-[#4A5D4A] via-[#3D4E3D] to-[#2D3D2D]" 
+          onClick={handleClose}
+        />
 
         {/* Content */}
         <motion.div

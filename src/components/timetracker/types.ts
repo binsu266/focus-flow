@@ -1,0 +1,22 @@
+export type ViewMode = "day" | "week" | "month";
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  subCategories?: Category[];
+}
+
+export interface TimeBlock {
+  id: string;
+  categoryId: string;
+  startHour: number;
+  duration: number;
+  dayOffset?: number;
+}
+
+export interface ActiveRecording {
+  categoryId: string;
+  startTime: Date;
+}
