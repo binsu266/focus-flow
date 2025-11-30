@@ -268,8 +268,8 @@ const Calendar = () => {
                 </div>
 
                 {/* 할일 바 오버레이 */}
-                <div className="absolute top-8 left-0 right-0 px-0.5 space-y-0.5 pointer-events-none">
-                  {weekTodos.slice(0, 3).map(({ todo, barInfo }) => {
+                <div className="absolute top-8 left-0 right-0 px-0.5 pointer-events-none">
+                  {weekTodos.slice(0, 3).map(({ todo, barInfo }, idx) => {
                     if (!barInfo) return null;
                     const { startIdx, isRealStart, isRealEnd, span } = barInfo;
                     const leftPercent = (startIdx / 7) * 100;
@@ -279,7 +279,7 @@ const Calendar = () => {
                       <div
                         key={todo.id}
                         className={cn(
-                          "h-[18px] flex items-center px-1 text-[10px] font-medium text-white truncate",
+                          "h-[18px] flex items-center px-1 text-[10px] font-medium text-white truncate absolute",
                           isRealStart && "rounded-l",
                           isRealEnd && "rounded-r",
                           !isRealStart && "rounded-l-none",
@@ -287,7 +287,8 @@ const Calendar = () => {
                         )}
                         style={{
                           backgroundColor: todo.color,
-                          marginLeft: `${leftPercent}%`,
+                          left: `${leftPercent}%`,
+                          top: `${idx * 20}px`,
                           width: `calc(${widthPercent}% - 2px)`,
                           opacity: todo.completed ? 0.5 : 1
                         }}
@@ -299,7 +300,10 @@ const Calendar = () => {
                     );
                   })}
                   {weekTodos.length > 3 && (
-                    <div className="text-[10px] text-muted-foreground pl-1">
+                    <div 
+                      className="absolute text-[10px] text-muted-foreground pl-1"
+                      style={{ top: `${3 * 20}px` }}
+                    >
                       +{weekTodos.length - 3}개
                     </div>
                   )}
