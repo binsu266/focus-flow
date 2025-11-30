@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -6,32 +6,46 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSa
 import { ko } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { getDummyData, categories, categoryColors } from "@/data/timeTrackerData";
-import { TimeBlock } from "@/components/timetracker/types";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
+// 할일 타입 정의
+interface TodoItem {
+  id: string;
+  date: string;
+  title: string;
+  completed: boolean;
+  color: string;
+}
+
+// 더미 할일 데이터
+const dummyTodos: TodoItem[] = [
+  { id: "1", date: "2025-12-03", title: "프로젝트 회의", completed: false, color: "#3B82F6" },
+  { id: "2", date: "2025-12-03", title: "보고서 작성", completed: true, color: "#10B981" },
+  { id: "3", date: "2025-12-05", title: "팀 미팅", completed: false, color: "#F59E0B" },
+  { id: "4", date: "2025-12-10", title: "발표 준비", completed: false, color: "#EF4444" },
+  { id: "5", date: "2025-12-15", title: "코드 리뷰", completed: false, color: "#8B5CF6" },
+  { id: "6", date: "2025-12-20", title: "연말 정산", completed: false, color: "#EC4899" },
+  { id: "7", date: "2025-12-25", title: "크리스마스 파티", completed: false, color: "#EF4444" },
+];
+
 const Calendar = () => {
   const navigate = useNavigate();
-  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 11, 1)); // December 2025
+  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 11, 1));
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(2025, 11, 1));
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
-  
-  const timeBlocks = useMemo(() => getDummyData(), []);
 
-  // Get blocks grouped by date
-  const blocksByDate = useMemo(() => {
-    const grouped: Record<string, TimeBlock[]> = {};
-    timeBlocks.forEach(block => {
-      if (block.date) {
-        if (!grouped[block.date]) {
-          grouped[block.date] = [];
-        }
-        grouped[block.date].push(block);
+  // 날짜별 할일 그룹화
+  const todosByDate = useMemo(() => {
+    const grouped: Record<string, TodoItem[]> = {};
+    dummyTodos.forEach(todo => {
+      if (!grouped[todo.date]) {
+        grouped[todo.date] = [];
       }
+      grouped[todo.date].push(todo);
     });
     return grouped;
-  }, [timeBlocks]);
+  }, []);
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
@@ -49,32 +63,18 @@ const Calendar = () => {
     return days;
   }, [currentMonth]);
 
-  // Get top category colors for a date (max 3)
-  const getDateDots = useCallback((date: Date) => {
+  // 날짜별 할일 도트 색상 가져오기 (최대 3개)
+  const getDateDots = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    const blocks = blocksByDate[dateStr] || [];
-    if (blocks.length === 0) return [];
+    const todos = todosByDate[dateStr] || [];
+    return todos.slice(0, 3).map(todo => todo.color);
+  };
 
-    // Count duration per category
-    const categoryDurations: Record<string, number> = {};
-    blocks.forEach(block => {
-      categoryDurations[block.categoryId] = (categoryDurations[block.categoryId] || 0) + block.duration;
-    });
-
-    // Sort by duration and get top 3
-    const sortedCategories = Object.entries(categoryDurations)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([categoryId]) => categoryId);
-
-    return sortedCategories;
-  }, [blocksByDate]);
-
-  // Get blocks for selected date
-  const selectedDateBlocks = useMemo(() => {
+  // 선택된 날짜의 할일 목록
+  const selectedDateTodos = useMemo(() => {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
-    return (blocksByDate[dateStr] || []).sort((a, b) => a.startHour - b.startHour);
-  }, [selectedDate, blocksByDate]);
+    return todosByDate[dateStr] || [];
+  }, [selectedDate, todosByDate]);
 
   const handlePrevMonth = () => {
     setSwipeDirection("right");
@@ -96,7 +96,7 @@ const Calendar = () => {
   };
 
   const handleAgendaItemClick = () => {
-    navigate("/", { state: { selectedDate: selectedDate } });
+    navigate("/todo");
   };
 
   // Swipe handlers
@@ -106,12 +106,6 @@ const Calendar = () => {
     } else if (info.offset.x < -100) {
       handleNextMonth();
     }
-  };
-
-  const formatTime = (hour: number) => {
-    const h = Math.floor(hour);
-    const m = Math.round((hour - h) * 60);
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
   };
 
   const today = new Date();
@@ -142,12 +136,12 @@ const Calendar = () => {
       </header>
 
       {/* Weekday Header */}
-      <div className="grid grid-cols-7 border-b border-border bg-background sticky top-[57px] z-20">
+      <div className="grid grid-cols-7 border-b border-border bg-background sticky top-[57px] z-20 w-full">
         {WEEKDAYS.map((day, index) => (
           <div
             key={day}
             className={cn(
-              "py-2 text-center text-sm font-medium",
+              "py-2 text-center text-xs font-medium flex-1",
               index === 0 && "text-red-500",
               index === 6 && "text-blue-500",
               index !== 0 && index !== 6 && "text-muted-foreground"
@@ -202,14 +196,14 @@ const Calendar = () => {
                   {format(day, "d")}
                 </span>
                 
-                {/* Category dots */}
+                {/* Todo dots */}
                 {dots.length > 0 && (
                   <div className="flex gap-0.5">
-                    {dots.map((categoryId, i) => (
+                    {dots.map((color, i) => (
                       <div
                         key={i}
                         className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: categoryColors[categoryId] }}
+                        style={{ backgroundColor: color }}
                       />
                     ))}
                   </div>
@@ -237,48 +231,40 @@ const Calendar = () => {
         {/* Agenda list */}
         <ScrollArea className="flex-1">
           <div className="px-4 pb-4 space-y-2">
-            {selectedDateBlocks.length === 0 ? (
+            {selectedDateTodos.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
-                기록된 일정이 없습니다
+                등록된 할일이 없습니다
               </div>
             ) : (
-              selectedDateBlocks.map((block) => {
-                const category = categories.find(c => c.id === block.categoryId);
-                if (!category) return null;
+              selectedDateTodos.map((todo) => (
+                <motion.button
+                  key={todo.id}
+                  onClick={handleAgendaItemClick}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors"
+                >
+                  {/* Color bar */}
+                  <div
+                    className="w-1 h-10 rounded-full"
+                    style={{ backgroundColor: todo.color }}
+                  />
+                  
+                  {/* Todo title */}
+                  <span className={cn(
+                    "font-medium flex-1 text-left",
+                    todo.completed && "line-through text-muted-foreground"
+                  )}>
+                    {todo.title}
+                  </span>
 
-                const endHour = block.startHour + block.duration;
-
-                return (
-                  <motion.button
-                    key={block.id}
-                    onClick={handleAgendaItemClick}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors"
-                  >
-                    {/* Color bar */}
-                    <div
-                      className="w-1 h-10 rounded-full"
-                      style={{ backgroundColor: categoryColors[block.categoryId] }}
-                    />
-                    
-                    {/* Time range */}
-                    <div className="text-sm text-muted-foreground min-w-[80px]">
-                      {formatTime(block.startHour)} - {formatTime(endHour)}
-                    </div>
-                    
-                    {/* Category info */}
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="text-lg">{category.icon}</span>
-                      <span className="font-medium">{category.name}</span>
-                    </div>
-
-                    {/* Duration badge */}
+                  {/* Completed badge */}
+                  {todo.completed && (
                     <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                      {block.duration}시간
+                      완료
                     </div>
-                  </motion.button>
-                );
-              })
+                  )}
+                </motion.button>
+              ))
             )}
           </div>
         </ScrollArea>
