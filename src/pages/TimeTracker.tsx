@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 import TimeTrackerHeader from "@/components/timetracker/TimeTrackerHeader";
 import OneThingBanner from "@/components/timetracker/OneThingBanner";
@@ -152,7 +153,7 @@ const TimeTracker = () => {
                 startHour,
                 duration,
                 dayOffset: 0,
-                date: selectedDate.toISOString().split("T")[0],
+                date: format(selectedDate, "yyyy-MM-dd"),
               };
               setTimeBlocks((prev) => [...prev, newBlock]);
               const category = categories.find((c) => c.id === categoryId);
