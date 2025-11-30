@@ -1,5 +1,5 @@
-import { useRef, useEffect } from "react";
-import { format, startOfWeek, startOfMonth, addDays, getDaysInMonth } from "date-fns";
+import { useRef, useEffect, useMemo } from "react";
+import { format, startOfWeek, startOfMonth, addDays, getDaysInMonth, differenceInDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import TimeRuler from "./TimeRuler";
 import TimeBlockItem from "./TimeBlockItem";
@@ -45,13 +45,14 @@ const TimeBlockArea = ({
   const weekDays = getWeekDays();
   const monthDays = getMonthDays();
 
-  const getColumnsForView = () => {
-    if (viewMode === "week") return 7;
-    if (viewMode === "month") return getDaysInMonth(selectedDate);
-    return 1;
-  };
-
-  const columnCount = getColumnsForView();
+  // Filter blocks by selected date for day view
+  const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+  const filteredBlocks = useMemo(() => {
+    if (viewMode === "day") {
+      return timeBlocks.filter(block => block.date === selectedDateStr);
+    }
+    return timeBlocks;
+  }, [timeBlocks, selectedDateStr, viewMode]);
 
   // Auto-scroll to current time on mount
   useEffect(() => {
@@ -106,12 +107,8 @@ const TimeBlockArea = ({
           className="border-b border-border/50 relative"
           style={{ height: `${hourHeight}px` }}
         >
-          {timeBlocks
-            .filter(
-              (block) =>
-                block.startHour === hour &&
-                (block.dayOffset === 0 || block.dayOffset === undefined)
-            )
+          {filteredBlocks
+            .filter((block) => block.startHour === hour)
             .map((block) => {
               const category = categories.find((c) => c.id === block.categoryId);
               return (
@@ -134,46 +131,55 @@ const TimeBlockArea = ({
     </div>
   );
 
-  const renderMultiColumnView = () => (
-    <div className="flex-1 flex">
-      {Array.from({ length: columnCount }, (_, colIndex) => (
-        <div
-          key={colIndex}
-          className="flex-1 border-l border-border/30 first:border-l-0 relative"
-          style={{ minWidth: 0 }}
-        >
-          {hours.map((hour) => (
+  const renderMultiColumnView = () => {
+    const days = viewMode === "week" ? weekDays : monthDays;
+    
+    return (
+      <div className="flex-1 flex">
+        {days.map((day, colIndex) => {
+          const dayStr = format(day, "yyyy-MM-dd");
+          const dayBlocks = timeBlocks.filter(block => block.date === dayStr);
+          
+          return (
             <div
-              key={hour}
-              className="border-b border-border/50 relative"
-              style={{ height: `${hourHeight}px` }}
+              key={colIndex}
+              className="flex-1 border-l border-border/30 first:border-l-0 relative"
+              style={{ minWidth: 0 }}
             >
-              {timeBlocks
-                .filter((block) => block.startHour === hour && block.dayOffset === colIndex)
-                .map((block) => {
-                  const category = categories.find((c) => c.id === block.categoryId);
-                  return (
-                    <TimeBlockItem
-                      key={block.id}
-                      block={block}
-                      category={category}
-                      categories={categories}
-                      hourHeight={hourHeight}
-                      isSelected={selectedBlockId === block.id}
-                      showLabel={false}
-                      compact={viewMode === "month"}
-                      onSelect={onBlockSelect}
-                      onLongPress={onBlockLongPress}
-                      onUpdate={onBlockUpdate}
-                    />
-                  );
-                })}
+              {hours.map((hour) => (
+                <div
+                  key={hour}
+                  className="border-b border-border/50 relative"
+                  style={{ height: `${hourHeight}px` }}
+                >
+                  {dayBlocks
+                    .filter((block) => block.startHour === hour)
+                    .map((block) => {
+                      const category = categories.find((c) => c.id === block.categoryId);
+                      return (
+                        <TimeBlockItem
+                          key={block.id}
+                          block={block}
+                          category={category}
+                          categories={categories}
+                          hourHeight={hourHeight}
+                          isSelected={selectedBlockId === block.id}
+                          showLabel={false}
+                          compact={viewMode === "month"}
+                          onSelect={onBlockSelect}
+                          onLongPress={onBlockLongPress}
+                          onUpdate={onBlockUpdate}
+                        />
+                      );
+                    })}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
