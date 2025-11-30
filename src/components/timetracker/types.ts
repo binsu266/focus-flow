@@ -15,6 +15,7 @@ export interface TimeBlock {
   duration: number;
   dayOffset?: number;
   memo?: string;
+  date?: string; // YYYY-MM-DD format
 }
 
 export interface ActiveRecording {

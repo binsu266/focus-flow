@@ -10,6 +10,22 @@ interface CategoryListProps {
   onStopRecording: () => void;
 }
 
+// Map category id to CSS variable color class
+const getCategoryButtonStyle = (categoryId: string): string => {
+  const colorMap: Record<string, string> = {
+    sleep: "bg-category-sleep",
+    meal: "bg-category-meal",
+    exercise: "bg-category-exercise",
+    work: "bg-category-work",
+    reading: "bg-category-reading",
+    study: "bg-category-study",
+    housework: "bg-category-housework",
+    rest: "bg-category-rest",
+    waste: "bg-category-waste",
+  };
+  return colorMap[categoryId] || "bg-primary/10";
+};
+
 const CategoryList = ({
   categories,
   activeRecording,
@@ -38,6 +54,7 @@ const CategoryList = ({
     const isRecording = activeRecording?.categoryId === category.id;
     const isExpanded = expandedCategories.includes(category.id);
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
+    const buttonColorClass = getCategoryButtonStyle(category.id);
 
     return (
       <div key={category.id}>
@@ -52,14 +69,14 @@ const CategoryList = ({
             onClick={() => handlePlayClick(category.id)}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
               isRecording
-                ? "bg-destructive text-destructive-foreground"
-                : "bg-primary/10 hover:bg-primary/20"
+                ? "bg-destructive"
+                : buttonColorClass
             }`}
           >
             {isRecording ? (
-              <Pause className="w-3 h-3 text-destructive-foreground fill-current" />
+              <Pause className="w-3 h-3 text-foreground fill-current" />
             ) : (
-              <Play className="w-3 h-3 text-primary fill-primary" />
+              <Play className="w-3 h-3 text-foreground fill-foreground" />
             )}
           </button>
 

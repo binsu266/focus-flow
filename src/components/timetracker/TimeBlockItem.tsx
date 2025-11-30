@@ -36,29 +36,56 @@ const TimeBlockItem = ({
   onUpdate,
 }: TimeBlockItemProps) => {
   const [isResizing, setIsResizing] = useState<"top" | "bottom" | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showMemoPicker, setShowMemoPicker] = useState(false);
   const [memoValue, setMemoValue] = useState(block.memo || "");
   const containerRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const startValueRef = useRef({ startHour: block.startHour, duration: block.duration });
+  const longPressTriggeredRef = useRef(false);
+  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  let pressTimer: NodeJS.Timeout | null = null;
+  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    longPressTriggeredRef.current = false;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    startYRef.current = clientY;
+    startValueRef.current = { startHour: block.startHour, duration: block.duration };
 
-  const handleMouseDown = () => {
-    pressTimer = setTimeout(() => {
+    pressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setIsDragging(true);
       onLongPress(block.id);
     }, 500);
   };
 
-  const handleMouseUp = () => {
-    if (pressTimer) {
-      clearTimeout(pressTimer);
-      pressTimer = null;
+  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!longPressTriggeredRef.current || !isDragging) return;
+    
+    e.preventDefault();
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    const deltaY = clientY - startYRef.current;
+    const deltaHours = Math.round((deltaY / hourHeight) * 4) / 4; // 15-minute snap
+    
+    const newStartHour = Math.max(0, Math.min(23 - block.duration + 1, startValueRef.current.startHour + deltaHours));
+    if (newStartHour !== block.startHour && newStartHour >= 0 && newStartHour + block.duration <= 24) {
+      onUpdate?.(block.id, { startHour: newStartHour });
     }
   };
 
+  const handleMouseUp = () => {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    setIsDragging(false);
+  };
+
   const handleClick = (e: React.MouseEvent) => {
+    if (longPressTriggeredRef.current) {
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     onSelect(block.id);
   };
@@ -117,26 +144,28 @@ const TimeBlockItem = ({
   };
 
   return (
-    <Popover open={isSelected && !isResizing}>
+    <Popover open={isSelected && !isResizing && !isDragging}>
       <PopoverTrigger asChild>
         <motion.div
           ref={containerRef}
           className={`absolute ${compact ? "inset-x-0.5" : "left-1 right-1"} ${category?.color} rounded-lg shadow-sm z-10 cursor-pointer ${
             isSelected ? "ring-2 ring-primary ring-offset-2" : ""
-          } ${compact ? "rounded-sm" : ""} ${isResizing ? "z-20" : ""}`}
+          } ${compact ? "rounded-sm" : ""} ${isResizing || isDragging ? "z-20" : ""} ${isDragging ? "opacity-80 shadow-lg" : ""}`}
           style={{
             height: `${block.duration * hourHeight}px`,
             top: 0,
           }}
           initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          animate={{ scale: isDragging ? 1.05 : 1, opacity: 1 }}
           whileHover={{ scale: compact ? 1 : 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleClick}
           onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onTouchStart={handleMouseDown}
+          onTouchMove={handleMouseMove}
           onTouchEnd={handleMouseUp}
         >
           {showLabel ? (

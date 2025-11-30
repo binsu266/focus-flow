@@ -71,9 +71,17 @@ const TimeTrackerHeader = ({
   const weekDays = getWeekDays();
 
   const getHeaderTitle = () => {
+    const today = new Date();
+    const tomorrow = addDays(today, 1);
+    
+    const isToday = format(selectedDate, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
+    const isTomorrow = format(selectedDate, "yyyy-MM-dd") === format(tomorrow, "yyyy-MM-dd");
+
     switch (viewMode) {
       case "day":
-        return "오늘";
+        if (isToday) return "오늘";
+        if (isTomorrow) return "내일";
+        return format(selectedDate, "M월 d일", { locale: ko });
       case "week":
         return `${format(weekDays[0], "d")}일 - ${format(weekDays[6], "d")}일`;
       case "month":

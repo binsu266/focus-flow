@@ -22,6 +22,66 @@ const categories: Category[] = [
   { id: "waste", name: "시간 낭비", icon: "🗑️", color: "bg-category-waste" },
 ];
 
+// Generate dummy data for November 24 to December 31
+const generateDummyData = (): TimeBlock[] => {
+  const blocks: TimeBlock[] = [];
+  const categoryIds = categories.map(c => c.id);
+  
+  // Generate November 24-30
+  for (let day = 24; day <= 30; day++) {
+    const numBlocks = Math.floor(Math.random() * 4) + 2;
+    const usedHours = new Set<number>();
+    
+    for (let i = 0; i < numBlocks; i++) {
+      let startHour: number;
+      do {
+        startHour = Math.floor(Math.random() * 20);
+      } while (usedHours.has(startHour) || usedHours.has(startHour + 1));
+      
+      const duration = Math.floor(Math.random() * 3) + 1;
+      usedHours.add(startHour);
+      usedHours.add(startHour + duration);
+      
+      blocks.push({
+        id: `nov-${day}-${i}`,
+        categoryId: categoryIds[Math.floor(Math.random() * categoryIds.length)],
+        startHour,
+        duration,
+        date: `2025-11-${day.toString().padStart(2, '0')}`,
+      });
+    }
+  }
+  
+  // Generate December 1-31
+  for (let day = 1; day <= 31; day++) {
+    const numBlocks = Math.floor(Math.random() * 4) + 2;
+    const usedHours = new Set<number>();
+    
+    for (let i = 0; i < numBlocks; i++) {
+      let startHour: number;
+      do {
+        startHour = Math.floor(Math.random() * 20);
+      } while (usedHours.has(startHour) || usedHours.has(startHour + 1));
+      
+      const duration = Math.floor(Math.random() * 3) + 1;
+      usedHours.add(startHour);
+      usedHours.add(startHour + duration);
+      
+      blocks.push({
+        id: `dec-${day}-${i}`,
+        categoryId: categoryIds[Math.floor(Math.random() * categoryIds.length)],
+        startHour,
+        duration,
+        date: `2025-12-${day.toString().padStart(2, '0')}`,
+      });
+    }
+  }
+  
+  return blocks;
+};
+
+const dummyData = generateDummyData();
+
 const TimeTracker = () => {
   const navigate = useNavigate();
   
@@ -30,21 +90,7 @@ const TimeTracker = () => {
   const [oneThing, setOneThing] = useState("아바투스 다 읽기");
   const [showOneThingModal, setShowOneThingModal] = useState(false);
   
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([
-    { id: "1", categoryId: "sleep", startHour: 0, duration: 4, dayOffset: 0 },
-    { id: "2", categoryId: "exercise", startHour: 8, duration: 1, dayOffset: 0 },
-    { id: "3", categoryId: "study", startHour: 10, duration: 2, dayOffset: 0 },
-    { id: "4", categoryId: "rest", startHour: 13, duration: 1, dayOffset: 0 },
-    { id: "5", categoryId: "waste", startHour: 14, duration: 1, dayOffset: 0 },
-    { id: "6", categoryId: "work", startHour: 16, duration: 2, dayOffset: 0 },
-    { id: "7", categoryId: "sleep", startHour: 0, duration: 6, dayOffset: 1 },
-    { id: "8", categoryId: "meal", startHour: 12, duration: 1, dayOffset: 1 },
-    { id: "9", categoryId: "study", startHour: 14, duration: 3, dayOffset: 2 },
-    { id: "10", categoryId: "exercise", startHour: 7, duration: 1, dayOffset: 3 },
-    { id: "11", categoryId: "work", startHour: 9, duration: 4, dayOffset: 4 },
-    { id: "12", categoryId: "rest", startHour: 15, duration: 2, dayOffset: 5 },
-    { id: "13", categoryId: "reading", startHour: 20, duration: 2, dayOffset: 6 },
-  ]);
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(dummyData);
   
   const [activeRecording, setActiveRecording] = useState<ActiveRecording | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
