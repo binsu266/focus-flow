@@ -127,7 +127,8 @@ const TimeTracker = () => {
 
       <OneThingBanner oneThing={oneThing} onClick={() => setShowOneThingModal(true)} />
 
-      <div className="flex flex-1 mt-4 px-2 overflow-hidden min-h-0">
+      <div className="flex flex-1 mt-4 px-2 gap-2 min-h-0">
+        {/* ScrollView A: 시간눈금 + 타임블록 (동기화 스크롤) */}
         <div className={`${viewMode === "day" ? "flex-1" : "flex-1"} overflow-hidden`}>
           <TimeBlockArea
             viewMode={viewMode}
@@ -148,10 +149,11 @@ const TimeTracker = () => {
           />
         </div>
 
+        {/* ScrollView B: 카테고리 버튼 (독립 스크롤) */}
         <AnimatePresence>
           {viewMode === "day" && (
             <motion.div
-              className="flex-1 overflow-hidden"
+              className="w-28 shrink-0 overflow-y-auto"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
