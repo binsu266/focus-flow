@@ -33,7 +33,7 @@ const TimeTracker = () => {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [zoomScale] = useState(1);
 
-  const hourHeight = 18 * zoomScale;
+  const hourHeight = 24 * zoomScale;
 
   const cycleViewMode = useCallback(() => {
     setViewMode((prev) => {
