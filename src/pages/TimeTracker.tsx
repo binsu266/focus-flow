@@ -144,8 +144,8 @@ const TimeTracker = () => {
 
       <OneThingBanner oneThing={oneThing} onClick={() => setShowOneThingModal(true)} />
 
-      <div className="flex flex-1 mt-4 px-2 overflow-hidden">
-        <div className={`${viewMode === "day" ? "flex-1" : "flex-1"}`}>
+      <div className="flex flex-1 mt-4 px-2 overflow-hidden min-h-0">
+        <div className={`${viewMode === "day" ? "flex-1" : "flex-1"} overflow-hidden`}>
           <TimeBlockArea
             viewMode={viewMode}
             selectedDate={selectedDate}
@@ -155,13 +155,20 @@ const TimeTracker = () => {
             hourHeight={hourHeight}
             onBlockSelect={handleBlockSelect}
             onBlockLongPress={handleBlockLongPress}
+            onBlockUpdate={(blockId, updates) => {
+              setTimeBlocks((prev) =>
+                prev.map((block) =>
+                  block.id === blockId ? { ...block, ...updates } : block
+                )
+              );
+            }}
           />
         </div>
 
         <AnimatePresence>
           {viewMode === "day" && (
             <motion.div
-              className="flex-1 pr-2 overflow-y-auto"
+              className="flex-1 overflow-hidden"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}

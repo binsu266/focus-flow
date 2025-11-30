@@ -14,6 +14,7 @@ interface TimeBlockAreaProps {
   hourHeight: number;
   onBlockSelect: (blockId: string) => void;
   onBlockLongPress: (blockId: string) => void;
+  onBlockUpdate?: (blockId: string, updates: Partial<TimeBlock>) => void;
 }
 
 const TimeBlockArea = ({
@@ -25,6 +26,7 @@ const TimeBlockArea = ({
   hourHeight,
   onBlockSelect,
   onBlockLongPress,
+  onBlockUpdate,
 }: TimeBlockAreaProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -117,11 +119,13 @@ const TimeBlockArea = ({
                   key={block.id}
                   block={block}
                   category={category}
+                  categories={categories}
                   hourHeight={hourHeight}
                   isSelected={selectedBlockId === block.id}
                   showLabel={true}
                   onSelect={onBlockSelect}
                   onLongPress={onBlockLongPress}
+                  onUpdate={onBlockUpdate}
                 />
               );
             })}
@@ -153,12 +157,14 @@ const TimeBlockArea = ({
                       key={block.id}
                       block={block}
                       category={category}
+                      categories={categories}
                       hourHeight={hourHeight}
                       isSelected={selectedBlockId === block.id}
                       showLabel={false}
                       compact={viewMode === "month"}
                       onSelect={onBlockSelect}
                       onLongPress={onBlockLongPress}
+                      onUpdate={onBlockUpdate}
                     />
                   );
                 })}
@@ -170,9 +176,9 @@ const TimeBlockArea = ({
   );
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
       {renderColumnHeaders()}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="flex">
           <TimeRuler hours={hours} hourHeight={hourHeight} />
           {viewMode === "day" ? renderDayView() : renderMultiColumnView()}
