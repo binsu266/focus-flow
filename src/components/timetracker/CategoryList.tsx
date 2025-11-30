@@ -122,7 +122,7 @@ const CategoryList = ({
   };
 
   return (
-    <div className="space-y-1 pr-1">
+    <div className="h-full overflow-y-auto space-y-1 pr-1">
       {categories.map((category) => renderCategory(category))}
     </div>
   );
