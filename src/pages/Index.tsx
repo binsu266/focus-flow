@@ -13,18 +13,25 @@ const Index = () => {
     setShowOneThing(true);
   };
 
-  const handleOneThingClose = (value: string) => {
+  const handleOneThingSave = (value: string) => {
     setShowOneThing(false);
-    // Store the one-thing value (could be in localStorage or state management)
     localStorage.setItem("todayOneThing", value);
-    // Redirect to main tracker page
-    navigate("/");
+    navigate("/tracker");
+  };
+
+  const handleOneThingClose = () => {
+    setShowOneThing(false);
+    navigate("/tracker");
   };
 
   return (
     <>
       <AffirmationModal isOpen={showAffirmation} onClose={handleAffirmationClose} />
-      <OneThingModal isOpen={showOneThing} onClose={handleOneThingClose} />
+      <OneThingModal 
+        isOpen={showOneThing} 
+        onClose={handleOneThingClose}
+        onSave={handleOneThingSave}
+      />
     </>
   );
 };
