@@ -1,6 +1,6 @@
 import { format, startOfWeek, addDays } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Calendar, CalendarDays, CalendarRange, MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,6 +21,29 @@ interface TimeTrackerHeaderProps {
   onMorningProgramEdit: () => void;
 }
 
+// Custom calendar icon with number
+const CalendarIcon = ({ number }: { number: string }) => (
+  <div className="relative w-6 h-6">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-6 h-6"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+    <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold mt-1.5">
+      {number}
+    </span>
+  </div>
+);
+
 const TimeTrackerHeader = ({
   viewMode,
   selectedDate,
@@ -32,22 +55,11 @@ const TimeTrackerHeader = ({
   const getViewIcon = () => {
     switch (viewMode) {
       case "day":
-        return <Calendar className="w-5 h-5" />;
+        return <CalendarIcon number="1" />;
       case "week":
-        return <CalendarDays className="w-5 h-5" />;
+        return <CalendarIcon number="7" />;
       case "month":
-        return <CalendarRange className="w-5 h-5" />;
-    }
-  };
-
-  const getViewLabel = () => {
-    switch (viewMode) {
-      case "day":
-        return "일";
-      case "week":
-        return "주";
-      case "month":
-        return "월";
+        return <CalendarIcon number="31" />;
     }
   };
 
@@ -70,13 +82,10 @@ const TimeTrackerHeader = ({
   };
 
   return (
-    <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
+    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="flex items-center justify-between px-4 py-3">
-        <Button variant="ghost" size="icon" onClick={onViewModeChange} className="relative">
+        <Button variant="ghost" size="icon" onClick={onViewModeChange}>
           {getViewIcon()}
-          <span className="absolute -bottom-1 -right-1 text-[10px] font-bold bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center">
-            {getViewLabel()}
-          </span>
         </Button>
         
         <h1 className="text-lg font-semibold text-center">
