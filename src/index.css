@@ -61,9 +61,26 @@ All colors MUST be HSL.
     /* Shadows */
     --shadow-soft: 0 4px 12px hsl(0 0% 0% / 0.05);
     --shadow-elevated: 0 8px 24px hsl(0 0% 0% / 0.08);
+    --shadow-card: 0 2px 8px hsl(0 0% 0% / 0.08);
+    --shadow-card-hover: 0 4px 12px hsl(0 0% 0% / 0.12);
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Statistics colors */
+    --stats-bg: 240 5% 96%;
+    --stats-text-primary: 0 0% 10%;
+    --stats-text-secondary: 0 0% 40%;
+    --stats-text-tertiary: 0 0% 60%;
+    --stats-accent: 5 100% 75%;
+    --stats-filter-inactive: 280 45% 90%;
+    --stats-filter-inactive-text: 280 22% 39%;
+    
+    /* Chart colors */
+    --chart-estrogen: 5 100% 75%;
+    --chart-fsh: 180 60% 63%;
+    --chart-lh: 135 36% 66%;
+    --chart-progesterone: 15 100% 83%;
   }
 }
 
