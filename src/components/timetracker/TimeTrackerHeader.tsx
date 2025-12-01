@@ -96,10 +96,8 @@ const TimeTrackerHeader = ({
           {getViewIcon()}
         </Button>
         
-        <h1 className="text-lg font-semibold text-center">
-          {format(selectedDate, "M월", { locale: ko })}
-          <br />
-          <span className="text-2xl">{getHeaderTitle()}</span>
+        <h1 className="text-2xl font-semibold text-center">
+          {getHeaderTitle()}
         </h1>
         
         <DropdownMenu>
