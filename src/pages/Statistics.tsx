@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
-import { Menu, MoreHorizontal, Footprints } from "lucide-react";
+import { Menu, MoreHorizontal, Footprints, Moon, Sunrise } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const productivityData = [
@@ -251,42 +251,76 @@ const Statistics = () => {
 
         {/* Bottom Two Column Cards */}
         <div className="grid grid-cols-2 gap-3">
-          {/* 경제신문 읽기 */}
+          {/* 경제신문 읽기 - GitHub style heatmap */}
           <motion.div
-            className="h-[100px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+            className="h-[200px] rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <h3 className="text-[13px] font-medium text-[#6B6B6B] tracking-[-0.2px] mb-3">경제신문 읽기</h3>
-            <div className="flex gap-1">
-              {[1, 1, 1, 1, 1, 1, 0.5, 0.3, 0.3].map((opacity, i) => (
-                <div 
-                  key={i} 
-                  className="flex-1 h-6 rounded-sm" 
-                  style={{ backgroundColor: `rgba(136, 201, 161, ${opacity})` }}
-                />
-              ))}
+            <h3 className="text-[14px] font-medium text-[#6B6B6B] tracking-[-0.2px] mb-4">경제신문 읽기</h3>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="grid grid-cols-7 gap-1 w-full">
+                {/* 5 rows x 7 columns = 35 cells */}
+                {[
+                  0, 4, 0, 0, 0, 0, 0,
+                  4, 4, 2, 4, 0, 0, 0,
+                  4, 4, 4, 4, 4, 0, 0,
+                  4, 4, 4, 4, 2, 0, 0,
+                  4, 4, 4, 0, 0, 0, 0,
+                ].map((level, i) => {
+                  const colors = [
+                    '#F0E8D8', // empty
+                    '#D4E5C0', // level 1
+                    '#B8D4A1', // level 2
+                    '#9BC382', // level 3
+                    '#88C9A1', // level 4
+                  ];
+                  return (
+                    <div
+                      key={i}
+                      className="aspect-square rounded-[4px] transition-transform duration-200 hover:scale-110"
+                      style={{ backgroundColor: colors[level] }}
+                    />
+                  );
+                })}
+              </div>
             </div>
           </motion.div>
 
           {/* 수면 기록 */}
           <motion.div
-            className="h-[100px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+            className="h-[200px] rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <h3 className="text-[13px] font-medium text-[#6B6B6B] tracking-[-0.2px] mb-2">수면 기록</h3>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#FFF8E1] flex items-center justify-center">
-                <span className="text-xl">🌙</span>
+            <h3 className="text-[14px] font-medium text-[#6B6B6B] tracking-[-0.2px] mb-4">수면 기록</h3>
+            <div className="flex-1 flex flex-col justify-center gap-5">
+              {/* 평균 수면시간 */}
+              <div className="flex items-center gap-3">
+                <div className="w-[52px] h-[52px] rounded-full bg-[#7A8F5C] flex items-center justify-center flex-shrink-0">
+                  <Moon className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[12px] font-medium text-[#6B6B6B] tracking-[-0.1px]">평균 수면시간</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[32px] font-bold text-[#1A1A1A] leading-none tracking-[-0.8px]">7.5</span>
+                    <span className="text-[16px] font-medium text-[#6B6B6B] tracking-[-0.2px]">시간</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-[11px] text-[#6B6B6B]">평균 수면시간</p>
-                <div className="flex items-baseline">
-                  <span className="text-[24px] font-bold text-[#1A1A1A] leading-none">7.5</span>
-                  <span className="text-[12px] text-[#6B6B6B] ml-1">시간</span>
+              
+              {/* 평균 기상시간 */}
+              <div className="flex items-center gap-3">
+                <div className="w-[52px] h-[52px] rounded-full bg-[#A8C88C] flex items-center justify-center flex-shrink-0">
+                  <Sunrise className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[12px] font-medium text-[#6B6B6B] tracking-[-0.1px]">평균 기상시간</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[32px] font-bold text-[#1A1A1A] leading-none tracking-[-0.8px]">07:30</span>
+                  </div>
                 </div>
               </div>
             </div>
