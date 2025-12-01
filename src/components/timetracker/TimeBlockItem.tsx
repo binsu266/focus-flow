@@ -200,8 +200,8 @@ const TimeBlockItem = ({
               {block.memo && <MessageSquare className="w-3 h-3 ml-auto opacity-70" />}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full">
-              <span className={compact ? "text-[8px]" : "text-sm"}>{category?.icon}</span>
+          <div className="flex items-center justify-center h-full">
+              <span className={`hidden md:inline ${compact ? "text-[8px]" : "text-sm"}`}>{category?.icon}</span>
             </div>
           )}
           
