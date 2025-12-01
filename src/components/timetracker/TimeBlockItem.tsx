@@ -201,7 +201,8 @@ const TimeBlockItem = ({
             </div>
           ) : (
           <div className="flex items-center justify-center h-full">
-              <span className={`hidden md:inline ${compact ? "text-[8px]" : "text-sm"}`}>{category?.icon}</span>
+              {!compact && <span className="text-sm">{category?.icon}</span>}
+              {compact && <span className="hidden md:inline text-[8px]">{category?.icon}</span>}
             </div>
           )}
           
