@@ -41,17 +41,14 @@ const Statistics = () => {
       </header>
 
       {/* Filter Buttons */}
-      <div className="flex gap-3 px-4 py-4 overflow-x-auto">
-        <Button className="h-11 px-5 rounded-[22px] text-[15px] font-medium bg-[#F0F0F0] text-[#6B6B6B] hover:bg-[#E8E8E8] border border-[#E0E0E0]">
-          카테고리 ▼
-        </Button>
-        <Button className="h-11 px-5 rounded-[22px] text-[15px] font-medium bg-[#F0F0F0] text-[#6B6B6B] hover:bg-[#E8E8E8] border border-[#E0E0E0]">
+      <div className="flex gap-2 px-4 py-4 overflow-x-auto">
+        <Button className="h-6 px-2 rounded-[12px] text-[10px] font-medium bg-[#F0F0F0] text-[#6B6B6B] hover:bg-[#E8E8E8] border border-[#E0E0E0]">
           기간 ▼
         </Button>
-        <Button className="h-11 px-5 rounded-[22px] text-[15px] font-medium bg-[#F0F0F0] text-[#6B6B6B] hover:bg-[#E8E8E8] border border-[#E0E0E0]">
+        <Button className="h-6 px-2 rounded-[12px] text-[10px] font-medium bg-[#F0F0F0] text-[#6B6B6B] hover:bg-[#E8E8E8] border border-[#E0E0E0]">
           정렬 ▼
         </Button>
-        <Button className="h-11 px-5 rounded-[22px] text-[15px] font-medium bg-[#5C5C5C] text-white hover:bg-[#4A4A4A]">
+        <Button className="h-6 px-2 rounded-[12px] text-[10px] font-medium bg-[#5C5C5C] text-white hover:bg-[#4A4A4A]">
           ★ 즐겨찾기
         </Button>
       </div>
