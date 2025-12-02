@@ -1,7 +1,20 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
-import { Menu, MoreHorizontal, Footprints, Moon, Sunrise } from "lucide-react";
+import { Menu, Plus, Footprints, Moon, Sunrise, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 const productivityData = [
   { date: "10.28", score: 3602 },
@@ -27,6 +40,21 @@ const hormoneData = [
 ];
 
 const Statistics = () => {
+  const [selectedPeriod, setSelectedPeriod] = useState("월");
+  const [selectedSort, setSelectedSort] = useState("가나다순");
+  const [isWidgetSheetOpen, setIsWidgetSheetOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  const handleOpenWidgetSheet = () => {
+    setIsWidgetSheetOpen(true);
+    setIsEditMode(true);
+  };
+
+  const handleCloseWidgetSheet = () => {
+    setIsWidgetSheetOpen(false);
+    setIsEditMode(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F7] pb-24">
       {/* Header */}
@@ -35,19 +63,41 @@ const Statistics = () => {
           <Menu className="w-6 h-6" />
         </Button>
         <h1 className="text-2xl font-bold text-[#1A1A1A]">통계</h1>
-        <Button variant="ghost" size="icon" className="text-[#1A1A1A]">
-          <MoreHorizontal className="w-6 h-6" />
+        <Button variant="ghost" size="icon" className="text-[#1A1A1A]" onClick={handleOpenWidgetSheet}>
+          <Plus className="w-6 h-6" />
         </Button>
       </header>
 
       {/* Filter Buttons */}
       <div className="flex gap-2 px-4 py-4 overflow-x-auto">
-        <Button className="h-6 px-2 rounded-[12px] text-[10px] font-medium bg-[#F0F0F0] text-[#6B6B6B] hover:bg-[#E8E8E8] border border-[#E0E0E0]">
-          기간 ▼
-        </Button>
-        <Button className="h-6 px-2 rounded-[12px] text-[10px] font-medium bg-[#F0F0F0] text-[#6B6B6B] hover:bg-[#E8E8E8] border border-[#E0E0E0]">
-          정렬 ▼
-        </Button>
+        {/* Period Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="h-6 px-2 rounded-[12px] text-[10px] font-medium bg-[#F0F0F0] text-[#6B6B6B] hover:bg-[#E8E8E8] border border-[#E0E0E0]">
+              {selectedPeriod} <ChevronDown className="w-3 h-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-white z-50">
+            <DropdownMenuItem onClick={() => setSelectedPeriod("연")}>연</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedPeriod("월")}>월</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedPeriod("일")}>일</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Sort Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="h-6 px-2 rounded-[12px] text-[10px] font-medium bg-[#F0F0F0] text-[#6B6B6B] hover:bg-[#E8E8E8] border border-[#E0E0E0]">
+              {selectedSort} <ChevronDown className="w-3 h-3 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-white z-50">
+            <DropdownMenuItem onClick={() => setSelectedSort("가나다순")}>가나다순</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedSort("프리셋 1")}>프리셋 1</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedSort("프리셋 2")}>프리셋 2</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button className="h-6 px-2 rounded-[12px] text-[10px] font-medium bg-[#5C5C5C] text-white hover:bg-[#4A4A4A]">
           ★ 즐겨찾기
         </Button>
@@ -56,10 +106,15 @@ const Statistics = () => {
       <div className="px-4 space-y-3">
         {/* Achievement Score Card */}
         <motion.div
-          className="w-full h-[280px] rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+          className="relative w-full h-[280px] rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
+          {isEditMode && (
+            <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center z-10 shadow-md">
+              <X className="w-4 h-4 text-white" />
+            </button>
+          )}
           <h3 className="text-[14px] font-medium text-[#6B6B6B] mb-2 tracking-[-0.2px]">성취도 점수</h3>
           <div className="flex items-center gap-3">
             <span className="text-[52px] font-bold text-[#1A1A1A] leading-none tracking-[-1.5px]">4,402</span>
@@ -109,11 +164,16 @@ const Statistics = () => {
         <div className="grid grid-cols-2 gap-3">
           {/* Reading Time */}
           <motion.div
-            className="h-[180px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
+            className="relative h-[180px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
           >
+            {isEditMode && (
+              <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center z-10 shadow-md">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            )}
             <h3 className="text-[13px] font-medium text-[#6B6B6B] tracking-[-0.2px]">독서시간</h3>
             <div className="flex-1 flex items-center justify-center">
               <div className="relative w-[110px] h-[110px]">
@@ -143,11 +203,16 @@ const Statistics = () => {
 
           {/* Steps */}
           <motion.div
-            className="h-[180px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
+            className="relative h-[180px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
+            {isEditMode && (
+              <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center z-10 shadow-md">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            )}
             <div className="flex-1 flex flex-col items-center justify-center">
               <div className="w-16 h-16 rounded-full border-[3px] border-[#88C9A1] flex items-center justify-center mb-3">
                 <Footprints className="w-7 h-7 text-[#88C9A1]" />
@@ -165,11 +230,16 @@ const Statistics = () => {
         <div className="grid grid-cols-2 gap-3">
           {/* YouTube Usage Card */}
           <motion.div
-            className="h-[200px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
+            className="relative h-[200px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
+            {isEditMode && (
+              <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center z-10 shadow-md">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            )}
             <h3 className="text-[13px] font-medium text-[#6B6B6B] tracking-[-0.2px]">YouTube 사용시간</h3>
             <div className="flex items-baseline mt-1">
               <span className="text-[36px] font-bold text-[#1A1A1A] leading-none tracking-[-1px]">4.2</span>
@@ -193,11 +263,16 @@ const Statistics = () => {
 
           {/* Hormone Cycle Card */}
           <motion.div
-            className="h-[200px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
+            className="relative h-[200px] rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
+            {isEditMode && (
+              <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center z-10 shadow-md">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            )}
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-[13px] font-medium text-[#6B6B6B] tracking-[-0.2px]">월경주기 호르몬변화</h3>
@@ -250,11 +325,16 @@ const Statistics = () => {
         <div className="grid grid-cols-2 gap-3">
           {/* 경제신문 읽기 - GitHub style heatmap */}
           <motion.div
-            className="h-[200px] rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
+            className="relative h-[200px] rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
+            {isEditMode && (
+              <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center z-10 shadow-md">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            )}
             <h3 className="text-[14px] font-medium text-[#6B6B6B] tracking-[-0.2px] mb-4">경제신문 읽기</h3>
             <div className="flex-1 flex items-center justify-center">
               <div className="grid grid-cols-7 gap-1 w-full">
@@ -287,11 +367,16 @@ const Statistics = () => {
 
           {/* 수면 기록 */}
           <motion.div
-            className="h-[200px] rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
+            className="relative h-[200px] rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
+            {isEditMode && (
+              <button className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center z-10 shadow-md">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            )}
             <h3 className="text-[14px] font-medium text-[#6B6B6B] tracking-[-0.2px] mb-4">수면 기록</h3>
             <div className="flex-1 flex flex-col justify-center gap-5">
               {/* 평균 수면시간 */}
@@ -324,6 +409,47 @@ const Statistics = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Widget Management Sheet */}
+      <Sheet open={isWidgetSheetOpen} onOpenChange={handleCloseWidgetSheet}>
+        <SheetContent side="bottom" className="h-[50vh] rounded-t-2xl bg-white">
+          <SheetHeader>
+            <SheetTitle className="text-[#1A1A1A]">위젯 관리</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-3">
+            <p className="text-[13px] text-[#6B6B6B]">추가할 위젯을 선택하세요</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" className="h-12 text-[13px] justify-start">
+                📊 성취도 점수
+              </Button>
+              <Button variant="outline" className="h-12 text-[13px] justify-start">
+                📖 독서시간
+              </Button>
+              <Button variant="outline" className="h-12 text-[13px] justify-start">
+                👣 걸음수
+              </Button>
+              <Button variant="outline" className="h-12 text-[13px] justify-start">
+                📺 YouTube 사용
+              </Button>
+              <Button variant="outline" className="h-12 text-[13px] justify-start">
+                🩸 호르몬 주기
+              </Button>
+              <Button variant="outline" className="h-12 text-[13px] justify-start">
+                📰 경제신문 읽기
+              </Button>
+              <Button variant="outline" className="h-12 text-[13px] justify-start">
+                😴 수면 기록
+              </Button>
+            </div>
+            <Button 
+              className="w-full mt-4 bg-[#5C5C5C] text-white hover:bg-[#4A4A4A]"
+              onClick={handleCloseWidgetSheet}
+            >
+              완료
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
