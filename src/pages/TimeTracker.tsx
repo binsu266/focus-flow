@@ -9,6 +9,7 @@ import OneThingBanner from "@/components/timetracker/OneThingBanner";
 import TimeBlockArea from "@/components/timetracker/TimeBlockArea";
 import CategoryList from "@/components/timetracker/CategoryList";
 import OneThingModal from "@/components/OneThingModal";
+import AffirmationModal from "@/components/AffirmationModal";
 import { ViewMode, TimeBlock, ActiveRecording } from "@/components/timetracker/types";
 import { categories, getDummyData } from "@/data/timeTrackerData";
 
@@ -27,6 +28,7 @@ const TimeTracker = () => {
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [oneThing, setOneThing] = useState("아바투스 다 읽기");
   const [showOneThingModal, setShowOneThingModal] = useState(false);
+  const [showAffirmationModal, setShowAffirmationModal] = useState(false);
   
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(dummyData);
   
@@ -106,9 +108,13 @@ const TimeTracker = () => {
   }, [navigate]);
 
   const handleMorningProgramEdit = useCallback(() => {
-    navigate("/settings");
-    toast.info("아침 동기부여 프로그램 설정으로 이동합니다");
-  }, [navigate]);
+    setShowAffirmationModal(true);
+  }, []);
+
+  const handleAffirmationClose = useCallback(() => {
+    setShowAffirmationModal(false);
+    setShowOneThingModal(true);
+  }, []);
 
   const handleOneThingSave = useCallback((value: string) => {
     setOneThing(value);
@@ -181,6 +187,11 @@ const TimeTracker = () => {
           )}
         </AnimatePresence>
       </div>
+
+      <AffirmationModal 
+        isOpen={showAffirmationModal} 
+        onClose={handleAffirmationClose} 
+      />
 
       <OneThingModal
         isOpen={showOneThingModal}
