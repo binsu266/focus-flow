@@ -220,6 +220,8 @@ const Calendar = () => {
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
           dragElastic={0.2}
+          dragSnapToOrigin={true}
+          dragMomentum={false}
           onDragEnd={handleDragEnd}
           className="flex-1"
         >
@@ -245,6 +247,7 @@ const Calendar = () => {
                         key={dayIndex}
                         onClick={() => handleDateClick(day)}
                         onDoubleClick={() => handleDateDoubleClick(day)}
+                        onPointerDown={(e) => e.stopPropagation()}
                         whileTap={{ scale: 0.95 }}
                         className={cn(
                           "min-h-[90px] flex flex-col items-center pt-1 relative border-b border-r border-border/20",
