@@ -144,6 +144,7 @@ const Calendar = () => {
   };
 
   const handleDateClick = (date: Date) => {
+    setSwipeDirection(null);
     setSelectedDate(date);
   };
 
@@ -213,7 +214,7 @@ const Calendar = () => {
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={currentMonth.toISOString()}
-          initial={{ opacity: 0, x: swipeDirection === "left" ? 100 : -100 }}
+          initial={swipeDirection === null ? false : { opacity: 0, x: swipeDirection === "left" ? 100 : -100 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: swipeDirection === "left" ? -100 : 100 }}
           transition={{ duration: 0.2 }}
