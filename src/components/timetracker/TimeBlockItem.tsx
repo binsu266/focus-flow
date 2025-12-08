@@ -262,19 +262,32 @@ const TimeBlockItem = ({
         <PopoverTrigger asChild>
           <motion.div
             ref={containerRef}
-            className={`absolute ${compact ? "inset-x-0.5" : "left-1 right-1"} ${category?.color} rounded-lg shadow-sm cursor-pointer ${
-              isSelected ? "ring-2 ring-primary ring-offset-2 z-20" : "z-10"
-            } ${compact ? "rounded-sm" : ""} ${isDragging ? "z-30 opacity-90 shadow-xl scale-105" : ""}`}
+            className={`absolute ${compact ? "inset-x-0.5" : "left-1 right-1"} ${category?.color} cursor-pointer ${
+              isSelected ? "ring-2 ring-primary ring-offset-1 z-30" : "z-10"
+            } ${compact ? "rounded-sm" : "rounded-lg"} ${isDragging ? "z-40 opacity-90" : ""}`}
             style={{
               height: `${block.duration * hourHeight}px`,
               top: 0,
             }}
-            initial={{ scale: 0.9, opacity: 0 }}
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ 
-              scale: isDragging ? 1.05 : 1, 
+              scale: isDragging ? 1.03 : 1, 
               opacity: isDragging ? 0.9 : 1,
+              boxShadow: isSelected 
+                ? "0 8px 16px -4px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1)" 
+                : isDragging 
+                  ? "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1)"
+                  : "0 2px 4px -1px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06)",
             }}
-            whileHover={{ scale: compact ? 1 : 1.02 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 25,
+            }}
+            whileHover={{ 
+              scale: compact ? 1 : 1.01,
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.08)",
+            }}
             onClick={handleClick}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}

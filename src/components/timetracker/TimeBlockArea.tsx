@@ -4,6 +4,7 @@ import { ko } from "date-fns/locale";
 import TimeRuler from "./TimeRuler";
 import TimeBlockItem from "./TimeBlockItem";
 import { ViewMode, Category, TimeBlock } from "./types";
+import { calculateOverlapInfo } from "./overlapUtils";
 
 interface TimeBlockAreaProps {
   viewMode: ViewMode;
@@ -59,6 +60,11 @@ const TimeBlockArea = ({
     }
     return timeBlocks;
   }, [timeBlocks, selectedDateStr, viewMode]);
+
+  // Calculate overlap info for filtered blocks
+  const overlapInfo = useMemo(() => {
+    return calculateOverlapInfo(filteredBlocks);
+  }, [filteredBlocks]);
 
   // Auto-scroll to current time on mount
   useEffect(() => {
@@ -150,11 +156,17 @@ const TimeBlockArea = ({
       {/* Time blocks - rendered with absolute positioning */}
       {filteredBlocks.map((block) => {
         const category = categories.find((c) => c.id === block.categoryId);
+        const overlap = overlapInfo.get(block.id) || { columnIndex: 0, totalColumns: 1 };
+        
         return (
           <div
             key={block.id}
-            className="absolute left-0 right-0"
-            style={{ top: `${block.startHour * hourHeight}px` }}
+            className="absolute"
+            style={{ 
+              top: `${block.startHour * hourHeight}px`,
+              left: `${(overlap.columnIndex / overlap.totalColumns) * 100}%`,
+              width: `${100 / overlap.totalColumns}%`,
+            }}
           >
             <TimeBlockItem
               block={block}
@@ -162,7 +174,8 @@ const TimeBlockArea = ({
               categories={categories}
               hourHeight={hourHeight}
               isSelected={selectedBlockId === block.id}
-              showLabel={true}
+              showLabel={overlap.totalColumns <= 2}
+              compact={overlap.totalColumns > 2}
               onSelect={onBlockSelect}
               onLongPress={onBlockLongPress}
               onUpdate={onBlockUpdate}
