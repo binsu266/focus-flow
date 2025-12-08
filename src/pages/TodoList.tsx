@@ -37,7 +37,7 @@ const categoryOptions: CategoryOption[] = [
   { icon: "🛒", label: "쇼핑", id: "shopping" },
 ];
 
-const LONG_PRESS_DURATION = 300; // 300ms for long press
+const LONG_PRESS_DURATION = 180; // 180ms for long press (60% of 300ms)
 
 const TodoList = () => {
   const [searchQuery, setSearchQuery] = useState("");
