@@ -242,13 +242,18 @@ const TimeBlockItem = ({
     });
   };
 
-  const handleDelete = () => {
-    onDelete?.(block.id);
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (onDelete) {
+      onDelete(block.id);
+      toast({
+        title: "삭제되었습니다",
+        duration: 2000,
+      });
+    }
     setShowDeleteConfirm(false);
-    toast({
-      title: "삭제되었습니다",
-      duration: 2000,
-    });
   };
 
   return (
@@ -475,12 +480,12 @@ const TimeBlockItem = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
+              variant="destructive"
               onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               삭제
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
