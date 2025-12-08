@@ -243,11 +243,11 @@ const TodoList = () => {
           }
           initial={{ opacity: 0, y: 20 }}
           animate={{
-            opacity: isBeingDragged ? 0.9 : 1,
+            opacity: isBeingDragged ? 0.65 : 1,
             y: 0,
-            scale: isBeingDragged ? 1.05 : 1,
+            scale: isBeingDragged ? 0.5 : 1,
             boxShadow: isBeingDragged
-              ? "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1)"
+              ? "0 8px 16px -4px rgba(0, 0, 0, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.08)"
               : "0 1px 3px rgba(0, 0, 0, 0.1)",
           }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
