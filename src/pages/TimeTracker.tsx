@@ -165,6 +165,10 @@ const TimeTracker = () => {
               const category = categories.find((c) => c.id === categoryId);
               toast.success(`${category?.icon} ${category?.name} 블록 생성됨`);
             }}
+            onBlockDelete={(blockId) => {
+              setTimeBlocks((prev) => prev.filter((block) => block.id !== blockId));
+              setSelectedBlockId(null);
+            }}
           />
         </div>
 

@@ -16,6 +16,7 @@ interface TimeBlockAreaProps {
   onBlockLongPress: (blockId: string) => void;
   onBlockUpdate?: (blockId: string, updates: Partial<TimeBlock>) => void;
   onBlockCreate?: (categoryId: string, startHour: number, duration: number) => void;
+  onBlockDelete?: (blockId: string) => void;
 }
 
 const TimeBlockArea = ({
@@ -29,6 +30,7 @@ const TimeBlockArea = ({
   onBlockLongPress,
   onBlockUpdate,
   onBlockCreate,
+  onBlockDelete,
 }: TimeBlockAreaProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const dayViewRef = useRef<HTMLDivElement>(null);
@@ -164,6 +166,7 @@ const TimeBlockArea = ({
               onSelect={onBlockSelect}
               onLongPress={onBlockLongPress}
               onUpdate={onBlockUpdate}
+              onDelete={onBlockDelete}
             />
           </div>
         );
@@ -209,6 +212,7 @@ const TimeBlockArea = ({
                           onSelect={onBlockSelect}
                           onLongPress={onBlockLongPress}
                           onUpdate={onBlockUpdate}
+                          onDelete={onBlockDelete}
                         />
                       );
                     })}
