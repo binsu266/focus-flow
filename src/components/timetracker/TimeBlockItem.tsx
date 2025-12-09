@@ -81,8 +81,9 @@ const TimeBlockItem = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const startValueRef = useRef({ startHour: block.startHour, duration: block.duration });
-  const longPressTriggeredRef = useRef(false);
-  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isDraggingRef = useRef(false);
+  const hasDraggedRef = useRef(false);
+  const DRAG_THRESHOLD = 5; // Minimum pixels to move before drag starts
 
   // Update time values when block changes
   useEffect(() => {
@@ -90,68 +91,67 @@ const TimeBlockItem = ({
     setEndTime(formatTimeValue(block.startHour + block.duration));
   }, [block.startHour, block.duration]);
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (pressTimerRef.current) {
-        clearTimeout(pressTimerRef.current);
-      }
-    };
-  }, []);
-
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    longPressTriggeredRef.current = false;
+    // Don't start drag if clicking on resize handles
+    if ((e.target as HTMLElement).closest('[data-resize-handle]')) {
+      return;
+    }
+    
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     startYRef.current = clientY;
     startValueRef.current = { startHour: block.startHour, duration: block.duration };
+    isDraggingRef.current = true;
+    hasDraggedRef.current = false;
 
-    pressTimerRef.current = setTimeout(() => {
-      longPressTriggeredRef.current = true;
-      setIsDragging(true);
-      onLongPress(block.id);
-      
-      // Start listening for drag events on document
-      document.addEventListener("mousemove", handleDragMove);
-      document.addEventListener("mouseup", handleDragEnd);
-      document.addEventListener("touchmove", handleDragMove);
-      document.addEventListener("touchend", handleDragEnd);
-    }, 500);
+    // Start listening for drag events immediately
+    document.addEventListener("mousemove", handleDragMove);
+    document.addEventListener("mouseup", handleDragEnd);
+    document.addEventListener("touchmove", handleDragMove, { passive: false });
+    document.addEventListener("touchend", handleDragEnd);
   };
 
   const handleDragMove = (e: MouseEvent | TouchEvent) => {
-    e.preventDefault();
+    if (!isDraggingRef.current) return;
+    
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     const deltaY = clientY - startYRef.current;
-    const deltaHours = Math.round((deltaY / hourHeight) * 4) / 4; // 15-minute snap
     
-    const newStartHour = Math.max(0, Math.min(24 - startValueRef.current.duration, startValueRef.current.startHour + deltaHours));
-    if (newStartHour >= 0 && newStartHour + startValueRef.current.duration <= 24) {
-      onUpdate?.(block.id, { startHour: newStartHour });
+    // Only start visual drag after threshold is crossed
+    if (!hasDraggedRef.current && Math.abs(deltaY) >= DRAG_THRESHOLD) {
+      hasDraggedRef.current = true;
+      setIsDragging(true);
+      onLongPress(block.id);
+    }
+    
+    // Only update position if we've crossed the threshold
+    if (hasDraggedRef.current) {
+      e.preventDefault();
+      const deltaHours = Math.round((deltaY / hourHeight) * 4) / 4; // 15-minute snap
+      
+      const newStartHour = Math.max(0, Math.min(24 - startValueRef.current.duration, startValueRef.current.startHour + deltaHours));
+      if (newStartHour >= 0 && newStartHour + startValueRef.current.duration <= 24) {
+        onUpdate?.(block.id, { startHour: newStartHour });
+      }
     }
   };
 
   const handleDragEnd = () => {
+    const wasDragging = hasDraggedRef.current;
+    isDraggingRef.current = false;
+    hasDraggedRef.current = false;
     setIsDragging(false);
-    longPressTriggeredRef.current = false;
+    
     document.removeEventListener("mousemove", handleDragMove);
     document.removeEventListener("mouseup", handleDragEnd);
     document.removeEventListener("touchmove", handleDragMove);
     document.removeEventListener("touchend", handleDragEnd);
-  };
-
-  const handleMouseUp = () => {
-    if (pressTimerRef.current) {
-      clearTimeout(pressTimerRef.current);
-      pressTimerRef.current = null;
-    }
-    // Only reset if we haven't started dragging
-    if (!longPressTriggeredRef.current) {
-      setIsDragging(false);
-    }
+    
+    return wasDragging;
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (longPressTriggeredRef.current) {
+    // If we were dragging, don't trigger click
+    if (hasDraggedRef.current) {
       e.preventDefault();
       return;
     }
@@ -290,10 +290,7 @@ const TimeBlockItem = ({
             }}
             onClick={handleClick}
             onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
             onTouchStart={handleMouseDown}
-            onTouchEnd={handleMouseUp}
           >
             {showLabel ? (
               <div className="p-2 flex items-center gap-1 h-full overflow-hidden">
