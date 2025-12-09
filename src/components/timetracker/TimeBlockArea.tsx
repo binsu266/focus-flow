@@ -18,6 +18,7 @@ interface TimeBlockAreaProps {
   onBlockUpdate?: (blockId: string, updates: Partial<TimeBlock>) => void;
   onBlockCreate?: (categoryId: string, startHour: number, duration: number) => void;
   onBlockDelete?: (blockId: string) => void;
+  onClearSelection?: () => void;
 }
 
 const TimeBlockArea = ({
@@ -32,6 +33,7 @@ const TimeBlockArea = ({
   onBlockUpdate,
   onBlockCreate,
   onBlockDelete,
+  onClearSelection,
 }: TimeBlockAreaProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const dayViewRef = useRef<HTMLDivElement>(null);
@@ -135,6 +137,13 @@ const TimeBlockArea = ({
     onBlockCreate(categoryId, startHour, 2);
   };
 
+  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only clear selection if clicking directly on the background, not on a time block
+    if (e.target === e.currentTarget || (e.target as HTMLElement).closest('[data-hour-grid]')) {
+      onClearSelection?.();
+    }
+  };
+
   const renderDayView = () => (
     <div 
       ref={dayViewRef}
@@ -143,11 +152,13 @@ const TimeBlockArea = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onClick={handleBackgroundClick}
     >
       {/* Hour grid lines */}
       {hours.map((hour) => (
         <div
           key={hour}
+          data-hour-grid
           className="absolute left-0 right-0 border-b border-border/50"
           style={{ top: `${hour * hourHeight}px`, height: `${hourHeight}px` }}
         />
