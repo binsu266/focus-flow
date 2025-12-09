@@ -256,9 +256,21 @@ const TimeBlockItem = ({
     setShowDeleteConfirm(false);
   };
 
+  // Reset menu state when popover closes
+  const isPopoverOpen = isSelected && !isResizing && !isDragging && !showTimeAdjust && !showDeleteConfirm;
+  
+  useEffect(() => {
+    if (!isPopoverOpen) {
+      // Reset to root menu when popover closes
+      setShowCategoryPicker(false);
+      setShowMemoPicker(false);
+      setMemoValue(block.memo || "");
+    }
+  }, [isPopoverOpen, block.memo]);
+
   return (
     <>
-      <Popover open={isSelected && !isResizing && !isDragging && !showTimeAdjust && !showDeleteConfirm}>
+      <Popover open={isPopoverOpen}>
         <PopoverTrigger asChild>
           <motion.div
             ref={containerRef}
