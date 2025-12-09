@@ -268,8 +268,25 @@ const TimeBlockItem = ({
     }
   }, [isPopoverOpen, block.memo]);
 
+  const handleBackdropClick = () => {
+    onSelect(block.id); // This will toggle off the selection
+  };
+
   return (
     <>
+      {/* Full-screen backdrop overlay */}
+      {isPopoverOpen && (
+        <motion.div
+          className="fixed inset-0 z-40"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onClick={handleBackdropClick}
+          style={{ backgroundColor: 'transparent' }}
+        />
+      )}
+      
       <Popover open={isPopoverOpen}>
         <PopoverTrigger asChild>
           <motion.div
