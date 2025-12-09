@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -97,10 +97,26 @@ const TimeTracker = () => {
     setSelectedBlockId((prev) => (prev === blockId ? null : blockId));
   }, []);
 
+  const handleClearSelection = useCallback(() => {
+    setSelectedBlockId(null);
+  }, []);
+
   const handleBlockLongPress = useCallback((blockId: string) => {
     setSelectedBlockId(blockId);
     toast.info("블록을 드래그하여 이동하세요");
   }, []);
+
+  // Close popover on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedBlockId) {
+        setSelectedBlockId(null);
+      }
+    };
+    
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [selectedBlockId]);
 
   const handleCategoryEdit = useCallback(() => {
     navigate("/settings");
@@ -145,6 +161,7 @@ const TimeTracker = () => {
             hourHeight={hourHeight}
             onBlockSelect={handleBlockSelect}
             onBlockLongPress={handleBlockLongPress}
+            onClearSelection={handleClearSelection}
             onBlockUpdate={(blockId, updates) => {
               setTimeBlocks((prev) =>
                 prev.map((block) =>
