@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Pencil, MessageSquare, Clock, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Pencil, MessageSquare, Clock, Trash2, GripHorizontal } from "lucide-react";
 import { Category, TimeBlock } from "./types";
 import {
   Popover,
@@ -78,12 +78,17 @@ const TimeBlockItem = ({
   const [startTime, setStartTime] = useState(formatTimeValue(block.startHour));
   const [endTime, setEndTime] = useState(formatTimeValue(block.startHour + block.duration));
   const [timeError, setTimeError] = useState<string | null>(null);
+  
+  // Resize preview state
+  const [resizePreview, setResizePreview] = useState<{ startHour: number; duration: number } | null>(null);
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const startValueRef = useRef({ startHour: block.startHour, duration: block.duration });
   const isDraggingRef = useRef(false);
   const hasDraggedRef = useRef(false);
-  const DRAG_THRESHOLD = 5; // Minimum pixels to move before drag starts
+  const isResizingRef = useRef<"top" | "bottom" | null>(null);
+  const DRAG_THRESHOLD = 5;
 
   // Update time values when block changes
   useEffect(() => {
@@ -103,7 +108,6 @@ const TimeBlockItem = ({
     isDraggingRef.current = true;
     hasDraggedRef.current = false;
 
-    // Start listening for drag events immediately
     document.addEventListener("mousemove", handleDragMove);
     document.addEventListener("mouseup", handleDragEnd);
     document.addEventListener("touchmove", handleDragMove, { passive: false });
@@ -116,17 +120,15 @@ const TimeBlockItem = ({
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     const deltaY = clientY - startYRef.current;
     
-    // Only start visual drag after threshold is crossed
     if (!hasDraggedRef.current && Math.abs(deltaY) >= DRAG_THRESHOLD) {
       hasDraggedRef.current = true;
       setIsDragging(true);
       onLongPress(block.id);
     }
     
-    // Only update position if we've crossed the threshold
     if (hasDraggedRef.current) {
       e.preventDefault();
-      const deltaHours = Math.round((deltaY / hourHeight) * 4) / 4; // 15-minute snap
+      const deltaHours = Math.round((deltaY / hourHeight) * 4) / 4;
       
       const newStartHour = Math.max(0, Math.min(24 - startValueRef.current.duration, startValueRef.current.startHour + deltaHours));
       if (newStartHour >= 0 && newStartHour + startValueRef.current.duration <= 24) {
@@ -150,7 +152,6 @@ const TimeBlockItem = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // If we were dragging, don't trigger click
     if (hasDraggedRef.current) {
       e.preventDefault();
       return;
@@ -159,48 +160,87 @@ const TimeBlockItem = ({
     onSelect(block.id);
   };
 
-  // Resize handlers
-  const handleResizeStart = (e: React.MouseEvent | React.TouchEvent, direction: "top" | "bottom") => {
+  // Improved resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent, direction: "top" | "bottom") => {
     e.stopPropagation();
     e.preventDefault();
+    
+    isResizingRef.current = direction;
     setIsResizing(direction);
     
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     startYRef.current = clientY;
     startValueRef.current = { startHour: block.startHour, duration: block.duration };
+    setResizePreview({ startHour: block.startHour, duration: block.duration });
 
-    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+    const handleResizeMove = (moveEvent: MouseEvent | TouchEvent) => {
+      if (!isResizingRef.current) return;
+      
+      moveEvent.preventDefault();
+      moveEvent.stopPropagation();
+      
       const moveY = "touches" in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
       const deltaY = moveY - startYRef.current;
       const deltaHours = Math.round((deltaY / hourHeight) * 4) / 4; // 15-minute snap
 
-      if (direction === "top") {
-        const newStartHour = Math.max(0, Math.min(23, startValueRef.current.startHour + deltaHours));
-        const newDuration = Math.max(0.25, startValueRef.current.duration - deltaHours);
-        if (newStartHour >= 0 && newDuration >= 0.25) {
-          onUpdate?.(block.id, { startHour: newStartHour, duration: newDuration });
+      let newStartHour = startValueRef.current.startHour;
+      let newDuration = startValueRef.current.duration;
+
+      if (isResizingRef.current === "top") {
+        // Moving top handle: adjust start time and duration
+        newStartHour = startValueRef.current.startHour + deltaHours;
+        newDuration = startValueRef.current.duration - deltaHours;
+        
+        // Constraints
+        if (newStartHour < 0) {
+          newDuration = newDuration + newStartHour;
+          newStartHour = 0;
+        }
+        if (newDuration < 0.25) {
+          newStartHour = startValueRef.current.startHour + startValueRef.current.duration - 0.25;
+          newDuration = 0.25;
         }
       } else {
-        const newDuration = Math.max(0.25, startValueRef.current.duration + deltaHours);
-        if (startValueRef.current.startHour + newDuration <= 24) {
-          onUpdate?.(block.id, { duration: newDuration });
+        // Moving bottom handle: adjust duration only
+        newDuration = startValueRef.current.duration + deltaHours;
+        
+        // Constraints
+        if (newDuration < 0.25) {
+          newDuration = 0.25;
+        }
+        if (newStartHour + newDuration > 24) {
+          newDuration = 24 - newStartHour;
         }
       }
+
+      // Update preview and actual block
+      setResizePreview({ startHour: newStartHour, duration: newDuration });
+      onUpdate?.(block.id, { startHour: newStartHour, duration: newDuration });
     };
 
-    const handleEnd = () => {
+    const handleResizeEnd = () => {
+      isResizingRef.current = null;
       setIsResizing(null);
-      document.removeEventListener("mousemove", handleMove);
-      document.removeEventListener("mouseup", handleEnd);
-      document.removeEventListener("touchmove", handleMove);
-      document.removeEventListener("touchend", handleEnd);
+      setResizePreview(null);
+      
+      // Haptic feedback (if available)
+      if (navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+      
+      document.removeEventListener("mousemove", handleResizeMove);
+      document.removeEventListener("mouseup", handleResizeEnd);
+      document.removeEventListener("touchmove", handleResizeMove);
+      document.removeEventListener("touchend", handleResizeEnd);
+      document.removeEventListener("touchcancel", handleResizeEnd);
     };
 
-    document.addEventListener("mousemove", handleMove);
-    document.addEventListener("mouseup", handleEnd);
-    document.addEventListener("touchmove", handleMove);
-    document.addEventListener("touchend", handleEnd);
-  };
+    document.addEventListener("mousemove", handleResizeMove);
+    document.addEventListener("mouseup", handleResizeEnd);
+    document.addEventListener("touchmove", handleResizeMove, { passive: false });
+    document.addEventListener("touchend", handleResizeEnd);
+    document.addEventListener("touchcancel", handleResizeEnd);
+  }, [block.startHour, block.duration, hourHeight, onUpdate, block.id]);
 
   const handleCategoryChange = (categoryId: string) => {
     onUpdate?.(block.id, { categoryId });
@@ -256,12 +296,10 @@ const TimeBlockItem = ({
     setShowDeleteConfirm(false);
   };
 
-  // Reset menu state when popover closes
   const isPopoverOpen = isSelected && !isResizing && !isDragging && !showTimeAdjust && !showDeleteConfirm;
   
   useEffect(() => {
     if (!isPopoverOpen) {
-      // Reset to root menu when popover closes
       setShowCategoryPicker(false);
       setShowMemoPicker(false);
       setMemoValue(block.memo || "");
@@ -269,8 +307,12 @@ const TimeBlockItem = ({
   }, [isPopoverOpen, block.memo]);
 
   const handleBackdropClick = () => {
-    onSelect(block.id); // This will toggle off the selection
+    onSelect(block.id);
   };
+
+  // Current display values (use preview during resize, otherwise use block values)
+  const displayStartHour = resizePreview?.startHour ?? block.startHour;
+  const displayDuration = resizePreview?.duration ?? block.duration;
 
   return (
     <>
@@ -293,7 +335,7 @@ const TimeBlockItem = ({
             ref={containerRef}
             className={`absolute ${compact ? "inset-x-0.5" : "left-1 right-1"} ${category?.color} cursor-pointer ${
               isSelected ? "ring-2 ring-primary ring-offset-1 z-30" : "z-10"
-            } ${compact ? "rounded-sm" : "rounded-lg"} ${isDragging ? "z-40 opacity-90" : ""}`}
+            } ${compact ? "rounded-sm" : "rounded-lg"} ${isDragging ? "z-40 opacity-90" : ""} ${isResizing ? "z-50" : ""}`}
             style={{
               height: `${block.duration * hourHeight}px`,
               top: 0,
@@ -334,24 +376,77 @@ const TimeBlockItem = ({
               </div>
             )}
             
-            {/* Resize handles when selected */}
+            {/* Resize handles when selected - with larger touch targets */}
             {isSelected && !compact && (
               <>
+                {/* Top resize handle */}
                 <div
                   data-resize-handle
-                  className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-8 h-3 bg-primary rounded-full cursor-ns-resize flex items-center justify-center hover:bg-primary/80 active:bg-primary/70 z-50"
+                  className="absolute -top-5 left-1/2 -translate-x-1/2 w-16 h-11 flex items-center justify-center cursor-ns-resize z-[60] touch-none"
                   onMouseDown={(e) => handleResizeStart(e, "top")}
                   onTouchStart={(e) => handleResizeStart(e, "top")}
                 >
-                  <div className="w-4 h-0.5 bg-primary-foreground rounded-full" />
+                  <motion.div 
+                    className={`w-10 h-4 rounded-full flex items-center justify-center transition-all duration-150 ${
+                      isResizing === "top" 
+                        ? "bg-primary scale-110 shadow-lg" 
+                        : "bg-primary/90 hover:bg-primary hover:scale-105"
+                    }`}
+                    animate={{
+                      scale: isResizing === "top" ? 1.15 : 1,
+                    }}
+                  >
+                    <GripHorizontal className="w-5 h-2.5 text-primary-foreground" />
+                  </motion.div>
+                  
+                  {/* Time preview tooltip for top handle */}
+                  <AnimatePresence>
+                    {isResizing === "top" && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        className="absolute left-full ml-2 bg-foreground text-background px-2 py-1 rounded text-xs font-mono whitespace-nowrap shadow-lg"
+                      >
+                        {formatTimeValue(displayStartHour)}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
+                
+                {/* Bottom resize handle */}
                 <div
                   data-resize-handle
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 w-8 h-3 bg-primary rounded-full cursor-ns-resize flex items-center justify-center hover:bg-primary/80 active:bg-primary/70 z-50"
+                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-16 h-11 flex items-center justify-center cursor-ns-resize z-[60] touch-none"
                   onMouseDown={(e) => handleResizeStart(e, "bottom")}
                   onTouchStart={(e) => handleResizeStart(e, "bottom")}
                 >
-                  <div className="w-4 h-0.5 bg-primary-foreground rounded-full" />
+                  <motion.div 
+                    className={`w-10 h-4 rounded-full flex items-center justify-center transition-all duration-150 ${
+                      isResizing === "bottom" 
+                        ? "bg-primary scale-110 shadow-lg" 
+                        : "bg-primary/90 hover:bg-primary hover:scale-105"
+                    }`}
+                    animate={{
+                      scale: isResizing === "bottom" ? 1.15 : 1,
+                    }}
+                  >
+                    <GripHorizontal className="w-5 h-2.5 text-primary-foreground" />
+                  </motion.div>
+                  
+                  {/* Time preview tooltip for bottom handle */}
+                  <AnimatePresence>
+                    {isResizing === "bottom" && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        className="absolute left-full ml-2 bg-foreground text-background px-2 py-1 rounded text-xs font-mono whitespace-nowrap shadow-lg"
+                      >
+                        {formatTimeValue(displayStartHour + displayDuration)}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </>
             )}
