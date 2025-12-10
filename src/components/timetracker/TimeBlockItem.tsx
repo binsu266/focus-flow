@@ -338,6 +338,7 @@ const TimeBlockItem = ({
             {isSelected && !compact && (
               <>
                 <div
+                  data-resize-handle
                   className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-8 h-3 bg-primary rounded-full cursor-ns-resize flex items-center justify-center hover:bg-primary/80 active:bg-primary/70"
                   onMouseDown={(e) => handleResizeStart(e, "top")}
                   onTouchStart={(e) => handleResizeStart(e, "top")}
@@ -345,6 +346,7 @@ const TimeBlockItem = ({
                   <div className="w-4 h-0.5 bg-primary-foreground rounded-full" />
                 </div>
                 <div
+                  data-resize-handle
                   className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 w-8 h-3 bg-primary rounded-full cursor-ns-resize flex items-center justify-center hover:bg-primary/80 active:bg-primary/70"
                   onMouseDown={(e) => handleResizeStart(e, "bottom")}
                   onTouchStart={(e) => handleResizeStart(e, "bottom")}
