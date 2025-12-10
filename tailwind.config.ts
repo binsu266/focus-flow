@@ -57,6 +57,9 @@ export default {
           waste: "hsl(var(--category-waste))",
           rest: "hsl(var(--category-rest))",
           housework: "hsl(var(--category-housework))",
+          commute: "hsl(var(--category-commute))",
+          social: "hsl(var(--category-social))",
+          routine: "hsl(var(--category-routine))",
         },
       },
       borderRadius: {
