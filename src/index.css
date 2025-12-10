@@ -52,6 +52,9 @@ All colors MUST be HSL.
     --category-waste: 5 100% 85%;
     --category-rest: 320 40% 85%;
     --category-housework: 160 40% 75%;
+    --category-commute: 210 30% 70%;
+    --category-social: 35 80% 75%;
+    --category-routine: 0 0% 75%;
 
     /* Gradients */
     --gradient-productivity: linear-gradient(135deg, hsl(135 36% 73%), hsl(195 75% 70%));
