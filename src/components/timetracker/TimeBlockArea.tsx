@@ -172,7 +172,7 @@ const TimeBlockArea = ({
         return (
           <div
             key={block.id}
-            className="absolute"
+            className="absolute overflow-visible"
             style={{ 
               top: `${block.startHour * hourHeight}px`,
               left: `${(overlap.columnIndex / overlap.totalColumns) * 100}%`,
