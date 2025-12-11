@@ -334,8 +334,8 @@ const TimeBlockItem = ({
           <motion.div
             ref={containerRef}
             className={`absolute ${compact ? "inset-x-0.5" : "left-1 right-1"} ${category?.color} cursor-pointer ${
-              isSelected ? "ring-2 ring-primary ring-offset-1 z-30" : "z-10"
-            } ${compact ? "rounded-sm" : "rounded-lg"} ${isDragging ? "z-40 opacity-90" : ""} ${isResizing ? "z-50" : ""}`}
+              isSelected ? "ring-2 ring-primary ring-offset-1 z-50" : "z-10"
+            } ${compact ? "rounded-sm" : "rounded-lg"} ${isDragging ? "z-[55] opacity-90" : ""} ${isResizing ? "z-[60]" : ""}`}
             style={{
               height: `${block.duration * hourHeight}px`,
               top: 0,
