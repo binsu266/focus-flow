@@ -58,6 +58,11 @@ const TodoList = () => {
   const [newTodoContent, setNewTodoContent] = useState("");
   const [selectedRepeatDays, setSelectedRepeatDays] = useState<number[]>([1, 2, 3, 4, 5]);
   
+  // Edit modal state
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editRepeatDays, setEditRepeatDays] = useState<number[]>([]);
+  
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const dragStartPosRef = useRef({ x: 0, y: 0 });
   const categoryRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -313,6 +318,46 @@ const TodoList = () => {
     toast.success(addModalTab === "habit" ? "새 습관이 추가되었습니다" : "할 일이 추가되었습니다");
   };
 
+  const openEditModal = (todo: Todo) => {
+    if (isDragging) return;
+    setEditingTodo(todo);
+    setEditContent(todo.content);
+    setEditRepeatDays(todo.repeatDays || []);
+  };
+
+  const handleEditTodo = () => {
+    if (!editingTodo || !editContent.trim()) return;
+
+    setTodos((prev) =>
+      prev.map((todo) => {
+        if (todo.id === editingTodo.id) {
+          return {
+            ...todo,
+            content: editContent,
+            ...(todo.type === "habit" && { repeatDays: editRepeatDays }),
+          };
+        }
+        return todo;
+      })
+    );
+
+    setEditingTodo(null);
+    toast.success("수정되었습니다");
+  };
+
+  const handleDeleteTodo = () => {
+    if (!editingTodo) return;
+    setTodos((prev) => prev.filter((todo) => todo.id !== editingTodo.id));
+    setEditingTodo(null);
+    toast.success("삭제되었습니다");
+  };
+
+  const toggleEditRepeatDay = (day: number) => {
+    setEditRepeatDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
+    );
+  };
+
   const getRepeatDaysLabel = (days?: number[]) => {
     if (!days || days.length === 0) return "";
     if (days.length === 7) return "매일";
@@ -350,6 +395,7 @@ const TodoList = () => {
           }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
           whileTap={!isDragging ? { scale: 0.98 } : undefined}
+          onClick={() => openEditModal(todo)}
           onMouseDown={(e) => handleTouchStart(e, todo.id)}
           onMouseMove={handleTouchMove}
           onMouseUp={handleTouchEnd}
@@ -427,6 +473,7 @@ const TodoList = () => {
           }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
           whileTap={!isDragging ? { scale: 0.98 } : undefined}
+          onClick={() => openEditModal(todo)}
           onMouseDown={(e) => handleTouchStart(e, todo.id)}
           onMouseMove={handleTouchMove}
           onMouseUp={handleTouchEnd}
@@ -860,6 +907,125 @@ const TodoList = () => {
                   ↑
                 </div>
                 {addModalTab === "habit" ? "습관 추가" : "할 일 추가"}
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Todo Modal */}
+      <AnimatePresence>
+        {editingTodo && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 z-50 flex items-end"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setEditingTodo(null)}
+          >
+            <motion.div
+              className="bg-background rounded-t-3xl w-full p-6"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-1 bg-muted rounded-full mx-auto mb-6" />
+              
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">
+                  {editingTodo.type === "habit" ? "🔄 습관 수정" : "📝 할 일 수정"}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={handleDeleteTodo}
+                >
+                  삭제
+                </Button>
+              </div>
+
+              <Input 
+                placeholder={editingTodo.type === "habit" ? "습관을 입력하세요" : "할 일을 입력하세요"}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="mb-4" 
+              />
+
+              {/* 습관일 때 반복 요일 수정 */}
+              {editingTodo.type === "habit" && (
+                <div className="mb-6">
+                  <p className="text-sm text-muted-foreground mb-3">반복 요일</p>
+                  <div className="flex gap-2">
+                    {dayLabels.map((label, index) => (
+                      <button
+                        key={index}
+                        className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
+                          editRepeatDays.includes(index)
+                            ? "bg-accent text-accent-foreground"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                        onClick={() => toggleEditRepeatDay(index)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                      onClick={() => setEditRepeatDays([0, 1, 2, 3, 4, 5, 6])}
+                    >
+                      매일
+                    </button>
+                    <button
+                      className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                      onClick={() => setEditRepeatDays([1, 2, 3, 4, 5])}
+                    >
+                      평일
+                    </button>
+                    <button
+                      className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                      onClick={() => setEditRepeatDays([0, 6])}
+                    >
+                      주말
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 할 일일 때 완료 상태 표시 */}
+              {editingTodo.type === "task" && (
+                <div className="flex items-center gap-3 mb-6 p-3 bg-muted/50 rounded-xl">
+                  <Checkbox
+                    checked={editingTodo.completed}
+                    onCheckedChange={() => {
+                      setTodos((prev) =>
+                        prev.map((todo) =>
+                          todo.id === editingTodo.id
+                            ? { ...todo, completed: !todo.completed }
+                            : todo
+                        )
+                      );
+                      setEditingTodo({ ...editingTodo, completed: !editingTodo.completed });
+                    }}
+                    className="w-6 h-6"
+                  />
+                  <span className="text-sm text-muted-foreground">완료됨</span>
+                </div>
+              )}
+
+              <Button 
+                className={`w-full h-14 rounded-full ${
+                  editingTodo.type === "habit" 
+                    ? "bg-accent hover:bg-accent/90" 
+                    : "bg-primary hover:bg-primary/90"
+                }`}
+                onClick={handleEditTodo}
+                disabled={!editContent.trim()}
+              >
+                저장하기
               </Button>
             </motion.div>
           </motion.div>
