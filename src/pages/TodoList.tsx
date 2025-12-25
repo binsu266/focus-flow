@@ -91,24 +91,22 @@ const AccordionSection = ({
   <section className="border-b border-border last:border-b-0">
     <button
       onClick={onToggle}
-      className="w-full flex items-center justify-between py-3 px-2 
+      className="w-full flex items-center gap-2 py-3 px-2 
                  hover:bg-muted/30 active:bg-muted/50 transition-colors
                  rounded-lg -mx-2 min-h-[48px]"
       aria-expanded={isExpanded}
       aria-controls={`section-${id}`}
     >
-      <div className="flex items-center gap-2">
-        <h2 className="text-lg font-bold">{title}</h2>
-        <span className="text-sm text-muted-foreground">({count})</span>
-        {headerExtra}
-      </div>
-      
       <motion.div
         animate={{ rotate: isExpanded ? 0 : -90 }}
         transition={{ duration: 0.2 }}
       >
         <ChevronDown className="w-5 h-5 text-muted-foreground" />
       </motion.div>
+      
+      <h2 className="text-lg font-bold">{title}</h2>
+      <span className="text-sm text-muted-foreground">({count})</span>
+      {headerExtra}
     </button>
 
     <AnimatePresence initial={false}>
