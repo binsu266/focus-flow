@@ -1,21 +1,22 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Menu, X, Flame, RotateCcw, Check } from "lucide-react";
+import { Plus, Search, Menu, X, Flame, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { isToday, isTomorrow, isWithinInterval, addDays, startOfDay } from "date-fns";
 
 interface Todo {
   id: string;
   content: string;
   time?: string;
+  dueDate?: Date;
   categoryTags: string[];
   priority: "high" | "medium" | "low";
   completed: boolean;
-  section: "today" | "tomorrow";
   type: "task" | "habit";
-  repeatDays?: number[]; // 0=일, 1=월, ..., 6=토
+  repeatDays?: number[];
   streak?: number;
 }
 
@@ -24,6 +25,8 @@ interface CategoryOption {
   label: string;
   id: string;
 }
+
+type SectionId = "habits" | "today" | "tomorrow" | "thisWeek" | "upcoming" | "noDate";
 
 const priorityColors = {
   high: "bg-destructive",
@@ -44,6 +47,93 @@ const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
 
 const LONG_PRESS_DURATION = 180;
 
+const getInitialExpandedSections = (): Record<SectionId, boolean> => {
+  const saved = localStorage.getItem("todoSectionExpanded");
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      // fallback to defaults
+    }
+  }
+  return {
+    habits: true,
+    today: true,
+    tomorrow: true,
+    thisWeek: false,
+    upcoming: false,
+    noDate: false,
+  };
+};
+
+// Accordion Section Component
+interface AccordionSectionProps {
+  id: SectionId;
+  title: string;
+  count: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  emptyMessage?: string;
+  headerExtra?: React.ReactNode;
+}
+
+const AccordionSection = ({
+  id,
+  title,
+  count,
+  isExpanded,
+  onToggle,
+  children,
+  emptyMessage = "할 일이 없습니다",
+  headerExtra,
+}: AccordionSectionProps) => (
+  <section className="border-b border-border last:border-b-0">
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center justify-between py-3 px-2 
+                 hover:bg-muted/30 active:bg-muted/50 transition-colors
+                 rounded-lg -mx-2 min-h-[48px]"
+      aria-expanded={isExpanded}
+      aria-controls={`section-${id}`}
+    >
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-bold">{title}</h2>
+        <span className="text-sm text-muted-foreground">({count})</span>
+        {headerExtra}
+      </div>
+      
+      <motion.div
+        animate={{ rotate: isExpanded ? 0 : -90 }}
+        transition={{ duration: 0.2 }}
+      >
+        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+      </motion.div>
+    </button>
+
+    <AnimatePresence initial={false}>
+      {isExpanded && (
+        <motion.div
+          id={`section-${id}`}
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          className="overflow-hidden"
+        >
+          <div className="pb-4">
+            {count > 0 ? children : (
+              <p className="text-center py-4 text-muted-foreground text-sm">
+                {emptyMessage}
+              </p>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </section>
+);
+
 const TodoList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -52,6 +142,11 @@ const TodoList = () => {
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  
+  // Accordion state
+  const [expandedSections, setExpandedSections] = useState<Record<SectionId, boolean>>(
+    getInitialExpandedSections
+  );
   
   // Add modal state
   const [addModalTab, setAddModalTab] = useState<"task" | "habit">("task");
@@ -67,6 +162,11 @@ const TodoList = () => {
   const dragStartPosRef = useRef({ x: 0, y: 0 });
   const categoryRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   
+  const today = startOfDay(new Date());
+  const tomorrow = addDays(today, 1);
+  const dayAfterTomorrow = addDays(today, 2);
+  const weekEnd = addDays(today, 7);
+  
   const [todos, setTodos] = useState<Todo[]>([
     // 습관 데이터
     {
@@ -75,7 +175,6 @@ const TodoList = () => {
       categoryTags: [],
       priority: "medium",
       completed: false,
-      section: "today",
       type: "habit",
       repeatDays: [0, 1, 2, 3, 4, 5, 6],
       streak: 12,
@@ -86,7 +185,6 @@ const TodoList = () => {
       categoryTags: [],
       priority: "medium",
       completed: true,
-      section: "today",
       type: "habit",
       repeatDays: [1, 2, 3, 4, 5],
       streak: 8,
@@ -97,7 +195,6 @@ const TodoList = () => {
       categoryTags: [],
       priority: "low",
       completed: false,
-      section: "today",
       type: "habit",
       repeatDays: [0, 1, 2, 3, 4, 5, 6],
       streak: 3,
@@ -108,60 +205,117 @@ const TodoList = () => {
       categoryTags: [],
       priority: "low",
       completed: false,
-      section: "today",
       type: "habit",
       repeatDays: [0, 1, 2, 3, 4, 5, 6],
       streak: 21,
     },
-    // 일반 할일 데이터
+    // 오늘 할일
     {
       id: "1",
       content: "청년프론티어십 3차시 과제",
       time: "오늘 13:00",
+      dueDate: today,
       categoryTags: ["study"],
       priority: "high",
       completed: false,
-      section: "today",
       type: "task",
     },
     {
       id: "2",
       content: "도서관에서 책 반납하기",
       time: "오늘 15:30",
+      dueDate: today,
       categoryTags: ["reading"],
       priority: "medium",
       completed: false,
-      section: "today",
       type: "task",
     },
     {
       id: "3",
       content: "재학증명서 발급받기",
       time: "오늘 16:00",
+      dueDate: today,
       categoryTags: [],
       priority: "low",
       completed: false,
-      section: "today",
       type: "task",
     },
+    // 내일 할일
     {
       id: "4",
       content: "디지털 창업 공모전 회의",
       time: "내일 11:30",
+      dueDate: tomorrow,
       categoryTags: ["work"],
       priority: "high",
       completed: false,
-      section: "tomorrow",
+      type: "task",
+    },
+    // 이번 주 할일
+    {
+      id: "5",
+      content: "팀 미팅 자료 준비",
+      dueDate: addDays(today, 3),
+      categoryTags: ["work"],
+      priority: "high",
+      completed: false,
+      type: "task",
+    },
+    {
+      id: "6",
+      content: "운동 센터 등록하기",
+      dueDate: addDays(today, 5),
+      categoryTags: [],
+      priority: "medium",
+      completed: false,
+      type: "task",
+    },
+    // 예정됨
+    {
+      id: "7",
+      content: "친구 생일 선물 구매",
+      dueDate: addDays(today, 10),
+      categoryTags: ["shopping"],
+      priority: "medium",
+      completed: false,
+      type: "task",
+    },
+    // 날짜 없음
+    {
+      id: "8",
+      content: "아이디어 정리하기",
+      categoryTags: [],
+      priority: "low",
+      completed: false,
+      type: "task",
+    },
+    {
+      id: "9",
+      content: "책 읽기 목록 정리",
+      categoryTags: ["reading"],
+      priority: "low",
+      completed: false,
       type: "task",
     },
   ]);
+
+  // Save expanded state to localStorage
+  useEffect(() => {
+    localStorage.setItem("todoSectionExpanded", JSON.stringify(expandedSections));
+  }, [expandedSections]);
+
+  const toggleSection = (sectionId: SectionId) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionId]: !prev[sectionId],
+    }));
+  };
 
   const toggleTodo = (id: string) => {
     if (isDragging) return;
     setTodos(todos.map((todo) => {
       if (todo.id === id) {
         const newCompleted = !todo.completed;
-        // 습관 완료 시 streak 업데이트
         if (todo.type === "habit" && newCompleted && todo.streak !== undefined) {
           return { ...todo, completed: newCompleted, streak: todo.streak + 1 };
         }
@@ -180,6 +334,34 @@ const TodoList = () => {
     const matchesFilter = selectedFilter === null || todo.categoryTags.includes(selectedFilter);
     return matchesSearch && matchesFilter;
   });
+
+  // 섹션별 데이터 분류
+  const habits = filteredTodos.filter((t) => t.type === "habit");
+  
+  const todayTasks = filteredTodos.filter((t) => 
+    t.type === "task" && t.dueDate && isToday(t.dueDate)
+  );
+  
+  const tomorrowTasks = filteredTodos.filter((t) => 
+    t.type === "task" && t.dueDate && isTomorrow(t.dueDate)
+  );
+  
+  const thisWeekTasks = filteredTodos.filter((t) => {
+    if (t.type !== "task" || !t.dueDate) return false;
+    return isWithinInterval(t.dueDate, { start: dayAfterTomorrow, end: weekEnd });
+  });
+  
+  const upcomingTasks = filteredTodos.filter((t) => {
+    if (t.type !== "task" || !t.dueDate) return false;
+    return t.dueDate > weekEnd;
+  });
+  
+  const noDateTasks = filteredTodos.filter((t) => 
+    t.type === "task" && !t.dueDate
+  );
+
+  const completedHabits = habits.filter((h) => h.completed).length;
+  const totalHabits = habits.length;
 
   const getCategoryIcon = (categoryId: string) => {
     return categoryOptions.find((c) => c.id === categoryId)?.icon || "";
@@ -285,10 +467,6 @@ const TodoList = () => {
     );
   };
 
-  const getDraggingTodo = () => {
-    return todos.find((t) => t.id === draggingTodoId);
-  };
-
   const toggleRepeatDay = (day: number) => {
     setSelectedRepeatDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
@@ -304,8 +482,8 @@ const TodoList = () => {
       categoryTags: [],
       priority: "medium",
       completed: false,
-      section: "today",
       type: addModalTab,
+      dueDate: addModalTab === "task" ? today : undefined,
       ...(addModalTab === "habit" && {
         repeatDays: selectedRepeatDays,
         streak: 0,
@@ -358,14 +536,6 @@ const TodoList = () => {
     );
   };
 
-  const getRepeatDaysLabel = (days?: number[]) => {
-    if (!days || days.length === 0) return "";
-    if (days.length === 7) return "매일";
-    if (days.length === 5 && !days.includes(0) && !days.includes(6)) return "평일";
-    if (days.length === 2 && days.includes(0) && days.includes(6)) return "주말";
-    return days.map((d) => dayLabels[d]).join(", ");
-  };
-
   // 습관 칩 렌더링
   const chipTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -408,7 +578,6 @@ const TodoList = () => {
         onTouchStart={handleChipPress}
         onTouchEnd={handleChipRelease}
       >
-        {/* 체크 아이콘 */}
         <div className={`
           w-5 h-5 rounded-full flex items-center justify-center shrink-0
           ${habit.completed 
@@ -419,14 +588,12 @@ const TodoList = () => {
           {habit.completed && <Check className="w-3 h-3" />}
         </div>
         
-        {/* 습관 이름 */}
         <span className={`text-sm font-medium whitespace-nowrap ${
           habit.completed ? "text-accent-foreground" : "text-foreground"
         }`}>
           {habit.content}
         </span>
         
-        {/* 스트릭 뱃지 */}
         {habit.streak !== undefined && habit.streak > 0 && (
           <span className="flex items-center gap-0.5 text-xs text-orange-500">
             <Flame className="w-3 h-3" />
@@ -531,18 +698,6 @@ const TodoList = () => {
       </div>
     );
   };
-
-  const renderTodoItem = (todo: Todo) => {
-    return renderTaskItem(todo);
-  };
-
-  // 필터링된 데이터 분리
-  const habits = filteredTodos.filter((t) => t.type === "habit" && t.section === "today");
-  const todayTodos = filteredTodos.filter((t) => t.type === "task" && t.section === "today");
-  const tomorrowTodos = filteredTodos.filter((t) => t.type === "task" && t.section === "tomorrow");
-
-  const completedHabits = habits.filter((h) => h.completed).length;
-  const totalHabits = habits.length;
 
   return (
     <div 
@@ -652,115 +807,108 @@ const TodoList = () => {
         )}
       </header>
 
-      {/* Todo Sections */}
-      <div className="px-4 py-4 space-y-6">
+      {/* Todo Sections with Accordion */}
+      <div className="px-4 py-4 space-y-2">
         {/* 오늘의 습관 */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold">오늘의 습관</h2>
-              <span className="text-sm text-muted-foreground">
-                {completedHabits}/{totalHabits}
-              </span>
-            </div>
-            {totalHabits > 0 && (
-              <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-accent"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(completedHabits / totalHabits) * 100}%` }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                />
+        <AccordionSection
+          id="habits"
+          title="오늘의 습관"
+          count={habits.length}
+          isExpanded={expandedSections.habits}
+          onToggle={() => toggleSection("habits")}
+          emptyMessage="오늘 반복할 습관이 없습니다"
+          headerExtra={
+            totalHabits > 0 && (
+              <div className="flex items-center gap-2 ml-2">
+                <span className="text-xs text-muted-foreground">
+                  {completedHabits}/{totalHabits}
+                </span>
+                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-accent"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(completedHabits / totalHabits) * 100}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  />
+                </div>
               </div>
-            )}
+            )
+          }
+        >
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+            {habits.map((habit) => renderHabitChip(habit))}
           </div>
-          <AnimatePresence mode="popLayout">
-            {habits.length > 0 ? (
-              <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                {habits.map((habit) => renderHabitChip(habit))}
-              </div>
-            ) : (
-              <motion.div
-                className="text-center py-6 text-muted-foreground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <p>오늘 반복할 습관이 없습니다</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => {
-                    setAddModalTab("habit");
-                    setShowAddModal(true);
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  습관 추가
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </section>
+        </AccordionSection>
 
-        {/* 오늘 할 일 */}
-        <section>
-          <h2 className="text-lg font-bold mb-3">오늘 할 일</h2>
-          <AnimatePresence mode="popLayout">
-            {todayTodos.length > 0 ? (
-              <div className="space-y-2">
-                {todayTodos.map((todo) => renderTodoItem(todo))}
-              </div>
-            ) : (
-              <motion.div
-                className="text-center py-8 text-muted-foreground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                {selectedFilter ? (
-                  <>
-                    <p>{getCategoryIcon(selectedFilter)} {getCategoryLabel(selectedFilter)} 카테고리에 할 일이 없습니다</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => setShowAddModal(true)}
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      할 일 추가
-                    </Button>
-                  </>
-                ) : (
-                  <p>오늘 할 일이 없습니다</p>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </section>
+        {/* 오늘 */}
+        <AccordionSection
+          id="today"
+          title="오늘"
+          count={todayTasks.length}
+          isExpanded={expandedSections.today}
+          onToggle={() => toggleSection("today")}
+          emptyMessage="오늘 할 일이 없습니다"
+        >
+          <div className="space-y-2">
+            {todayTasks.map((todo) => renderTaskItem(todo))}
+          </div>
+        </AccordionSection>
 
-        {/* 내일 할 일 */}
-        <section>
-          <h2 className="text-lg font-bold mb-3">내일 할 일</h2>
-          <AnimatePresence mode="popLayout">
-            {tomorrowTodos.length > 0 ? (
-              <div className="space-y-2">
-                {tomorrowTodos.map((todo) => renderTodoItem(todo))}
-              </div>
-            ) : (
-              <motion.div
-                className="text-center py-8 text-muted-foreground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                {selectedFilter ? (
-                  <p>{getCategoryIcon(selectedFilter)} {getCategoryLabel(selectedFilter)} 카테고리에 할 일이 없습니다</p>
-                ) : (
-                  <p>내일 할 일이 없습니다</p>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </section>
+        {/* 내일 */}
+        <AccordionSection
+          id="tomorrow"
+          title="내일"
+          count={tomorrowTasks.length}
+          isExpanded={expandedSections.tomorrow}
+          onToggle={() => toggleSection("tomorrow")}
+          emptyMessage="내일 할 일이 없습니다"
+        >
+          <div className="space-y-2">
+            {tomorrowTasks.map((todo) => renderTaskItem(todo))}
+          </div>
+        </AccordionSection>
+
+        {/* 이번 주 */}
+        <AccordionSection
+          id="thisWeek"
+          title="이번 주"
+          count={thisWeekTasks.length}
+          isExpanded={expandedSections.thisWeek}
+          onToggle={() => toggleSection("thisWeek")}
+          emptyMessage="이번 주 할 일이 없습니다"
+        >
+          <div className="space-y-2">
+            {thisWeekTasks.map((todo) => renderTaskItem(todo))}
+          </div>
+        </AccordionSection>
+
+        {/* 예정됨 */}
+        <AccordionSection
+          id="upcoming"
+          title="예정됨"
+          count={upcomingTasks.length}
+          isExpanded={expandedSections.upcoming}
+          onToggle={() => toggleSection("upcoming")}
+          emptyMessage="예정된 할 일이 없습니다"
+        >
+          <div className="space-y-2">
+            {upcomingTasks.map((todo) => renderTaskItem(todo))}
+          </div>
+        </AccordionSection>
+
+        {/* 날짜 없음 */}
+        <AccordionSection
+          id="noDate"
+          title="날짜 없음"
+          count={noDateTasks.length}
+          isExpanded={expandedSections.noDate}
+          onToggle={() => toggleSection("noDate")}
+          emptyMessage="날짜 없는 할 일이 없습니다"
+        >
+          <div className="space-y-2">
+            {noDateTasks.map((todo) => renderTaskItem(todo))}
+          </div>
+        </AccordionSection>
       </div>
 
       {/* Floating Add Button */}
