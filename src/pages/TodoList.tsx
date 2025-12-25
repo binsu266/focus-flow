@@ -35,13 +35,18 @@ const priorityColors = {
 };
 
 const categoryOptions: CategoryOption[] = [
-  { icon: "☕", label: "커피", id: "coffee" },
-  { icon: "📚", label: "독서", id: "reading" },
-  { icon: "🏢", label: "업무", id: "work" },
-  { icon: "👤", label: "인물", id: "person" },
-  { icon: "✏️", label: "공부", id: "study" },
-  { icon: "🛒", label: "쇼핑", id: "shopping" },
+  { icon: "📚", label: "학업활동", id: "academic" },
+  { icon: "💼", label: "근로활동", id: "work" },
+  { icon: "🤝", label: "대외활동", id: "external" },
+  { icon: "🌿", label: "생활/건강", id: "lifestyle" },
 ];
+
+const categoryColors: Record<string, string> = {
+  academic: "bg-[#4A90E2] text-white",
+  work: "bg-[#5C6BC0] text-white",
+  external: "bg-[#FF9800] text-white",
+  lifestyle: "bg-[#66BB6A] text-white",
+};
 
 const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -213,7 +218,7 @@ const TodoList = () => {
       content: "청년프론티어십 3차시 과제",
       time: "오늘 13:00",
       dueDate: today,
-      categoryTags: ["study"],
+      categoryTags: ["academic"],
       priority: "high",
       completed: false,
       type: "task",
@@ -223,7 +228,7 @@ const TodoList = () => {
       content: "도서관에서 책 반납하기",
       time: "오늘 15:30",
       dueDate: today,
-      categoryTags: ["reading"],
+      categoryTags: ["academic"],
       priority: "medium",
       completed: false,
       type: "task",
@@ -233,7 +238,7 @@ const TodoList = () => {
       content: "재학증명서 발급받기",
       time: "오늘 16:00",
       dueDate: today,
-      categoryTags: [],
+      categoryTags: ["lifestyle"],
       priority: "low",
       completed: false,
       type: "task",
@@ -244,7 +249,7 @@ const TodoList = () => {
       content: "디지털 창업 공모전 회의",
       time: "내일 11:30",
       dueDate: tomorrow,
-      categoryTags: ["work"],
+      categoryTags: ["external"],
       priority: "high",
       completed: false,
       type: "task",
@@ -252,18 +257,18 @@ const TodoList = () => {
     // 이번 주 할일
     {
       id: "5",
-      content: "팀 미팅 자료 준비",
+      content: "팀플 발표 자료 준비",
       dueDate: addDays(today, 3),
-      categoryTags: ["work"],
+      categoryTags: ["academic"],
       priority: "high",
       completed: false,
       type: "task",
     },
     {
       id: "6",
-      content: "운동 센터 등록하기",
+      content: "헬스장 등록하기",
       dueDate: addDays(today, 5),
-      categoryTags: [],
+      categoryTags: ["lifestyle"],
       priority: "medium",
       completed: false,
       type: "task",
@@ -271,9 +276,9 @@ const TodoList = () => {
     // 예정됨
     {
       id: "7",
-      content: "친구 생일 선물 구매",
+      content: "알바 면접 준비",
       dueDate: addDays(today, 10),
-      categoryTags: ["shopping"],
+      categoryTags: ["work"],
       priority: "medium",
       completed: false,
       type: "task",
@@ -281,16 +286,16 @@ const TodoList = () => {
     // 날짜 없음
     {
       id: "8",
-      content: "아이디어 정리하기",
-      categoryTags: [],
+      content: "동아리 회비 정리",
+      categoryTags: ["external"],
       priority: "low",
       completed: false,
       type: "task",
     },
     {
       id: "9",
-      content: "책 읽기 목록 정리",
-      categoryTags: ["reading"],
+      content: "토익 단어 외우기",
+      categoryTags: ["work"],
       priority: "low",
       completed: false,
       type: "task",
@@ -753,20 +758,21 @@ const TodoList = () => {
                 ref={(el) => {
                   if (el) categoryRefs.current.set(cat.id, el);
                 }}
-                className={`h-9 px-3 rounded-full shrink-0 text-sm font-medium transition-all ${
+                className={`h-9 px-3 rounded-full shrink-0 text-sm font-medium transition-all flex items-center gap-1.5 ${
                   selectedFilter === cat.id
-                    ? "bg-primary/20 text-primary ring-2 ring-primary/30"
+                    ? `${categoryColors[cat.id]} ring-2 ring-offset-2 ring-offset-background`
                     : hoveredCategory === cat.id && isDragging
-                    ? "bg-primary/30 ring-2 ring-primary"
-                    : "bg-muted/50 hover:bg-muted"
+                    ? `${categoryColors[cat.id]} ring-2 ring-primary`
+                    : "bg-muted/50 hover:bg-muted text-foreground"
                 }`}
                 animate={{
-                  scale: hoveredCategory === cat.id && isDragging ? 1.2 : 1,
+                  scale: hoveredCategory === cat.id && isDragging ? 1.1 : 1,
                 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 onClick={() => !isDragging && handleFilterClick(cat.id)}
               >
-                {cat.icon}
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
               </motion.button>
             ))}
           </div>
