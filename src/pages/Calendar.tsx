@@ -39,7 +39,7 @@ const Calendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 11, 1));
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [todos, setTodos] = useState<TodoItem[]>(dummyTodos);
-  const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
+  const [swipeDirection, setSwipeDirection] = useState<"up" | "down" | null>(null);
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
@@ -134,12 +134,12 @@ const Calendar = () => {
   }, [selectedDate, todos]);
 
   const handlePrevMonth = () => {
-    setSwipeDirection("right");
+    setSwipeDirection("down");
     setCurrentMonth(prev => subMonths(prev, 1));
   };
 
   const handleNextMonth = () => {
-    setSwipeDirection("left");
+    setSwipeDirection("up");
     setCurrentMonth(prev => addMonths(prev, 1));
   };
 
@@ -159,9 +159,9 @@ const Calendar = () => {
   };
 
   const handleDragEnd = (event: any, info: any) => {
-    if (info.offset.x > 100) {
+    if (info.offset.y > 100) {
       handlePrevMonth();
-    } else if (info.offset.x < -100) {
+    } else if (info.offset.y < -100) {
       handleNextMonth();
     }
   };
@@ -214,12 +214,12 @@ const Calendar = () => {
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={currentMonth.toISOString()}
-          initial={swipeDirection === null ? false : { opacity: 0, x: swipeDirection === "left" ? 100 : -100 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: swipeDirection === "left" ? -100 : 100 }}
+          initial={swipeDirection === null ? false : { opacity: 0, y: swipeDirection === "up" ? 100 : -100 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: swipeDirection === "up" ? -100 : 100 }}
           transition={{ duration: 0.2 }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.2}
           dragSnapToOrigin={true}
           dragMomentum={false}
@@ -279,29 +279,29 @@ const Calendar = () => {
                     const leftPercent = (startIdx / 7) * 100;
                     const widthPercent = (span / 7) * 100;
 
-                    return (
-                      <div
-                        key={todo.id}
-                        className={cn(
-                          "h-[18px] flex items-center px-1 text-[10px] font-medium text-white truncate absolute",
-                          isRealStart && "rounded-l",
-                          isRealEnd && "rounded-r",
-                          !isRealStart && "rounded-l-none",
-                          !isRealEnd && "rounded-r-none"
-                        )}
-                        style={{
-                          backgroundColor: todo.color,
-                          left: `${leftPercent}%`,
-                          top: `${idx * 20}px`,
-                          width: `calc(${widthPercent}% - 2px)`,
-                          opacity: todo.completed ? 0.5 : 1
-                        }}
-                      >
-                        {(isRealStart || startIdx === 0) && (
-                          <span className="truncate">{todo.title}</span>
-                        )}
-                      </div>
-                    );
+                      return (
+                        <div
+                          key={todo.id}
+                          className={cn(
+                            "h-[18px] flex items-center px-1 text-[10px] font-medium text-gray-800 truncate absolute",
+                            isRealStart && "rounded-l",
+                            isRealEnd && "rounded-r",
+                            !isRealStart && "rounded-l-none",
+                            !isRealEnd && "rounded-r-none"
+                          )}
+                          style={{
+                            backgroundColor: `${todo.color}30`,
+                            left: `${leftPercent}%`,
+                            top: `${idx * 20}px`,
+                            width: `calc(${widthPercent}% - 2px)`,
+                            opacity: todo.completed ? 0.6 : 1
+                          }}
+                        >
+                          {(isRealStart || startIdx === 0) && (
+                            <span className="truncate">{todo.title}</span>
+                          )}
+                        </div>
+                      );
                   })}
                   {weekTodos.length > 3 && (
                     <div 
