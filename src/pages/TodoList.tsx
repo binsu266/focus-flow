@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Menu, X, Flame, Check, ChevronDown } from "lucide-react";
+import { Plus, Search, Menu, X, Flame, Check, ChevronDown, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -46,6 +46,13 @@ const categoryColors: Record<string, string> = {
   work: "bg-[#5C6BC0] text-white",
   external: "bg-[#FF9800] text-white",
   lifestyle: "bg-[#66BB6A] text-white",
+};
+
+const categoryBarColors: Record<string, string> = {
+  academic: "bg-[#4A90E2]",
+  work: "bg-[#5C6BC0]",
+  external: "bg-[#FF9800]",
+  lifestyle: "bg-[#66BB6A]",
 };
 
 const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
@@ -150,6 +157,9 @@ const TodoList = () => {
   const [expandedSections, setExpandedSections] = useState<Record<SectionId, boolean>>(
     getInitialExpandedSections
   );
+  
+  // Stats panel state
+  const [showStatsPanel, setShowStatsPanel] = useState(false);
   
   // Add modal state
   const [addModalTab, setAddModalTab] = useState<"task" | "habit">("task");
@@ -365,6 +375,37 @@ const TodoList = () => {
 
   const completedHabits = habits.filter((h) => h.completed).length;
   const totalHabits = habits.length;
+
+  // Stats calculations
+  const stats = useMemo(() => {
+    const allTasks = todos.filter(t => t.type === "task");
+    const completedTasks = allTasks.filter(t => t.completed);
+    const totalTaskCount = allTasks.length;
+    const completedTaskCount = completedTasks.length;
+    const taskCompletionRate = totalTaskCount > 0 
+      ? Math.round((completedTaskCount / totalTaskCount) * 100) 
+      : 0;
+
+    const categoryStats = categoryOptions.map(cat => ({
+      ...cat,
+      count: todos.filter(t => t.categoryTags.includes(cat.id)).length,
+    }));
+
+    const allHabits = todos.filter(t => t.type === "habit");
+    const maxStreak = allHabits.reduce((max, h) => 
+      (h.streak || 0) > max ? (h.streak || 0) : max, 0
+    );
+    const topStreakHabit = allHabits.find(h => h.streak === maxStreak);
+
+    return {
+      totalTaskCount,
+      completedTaskCount,
+      taskCompletionRate,
+      categoryStats,
+      maxStreak,
+      topStreakHabit,
+    };
+  }, [todos]);
 
   const getCategoryIcon = (categoryId: string) => {
     return categoryOptions.find((c) => c.id === categoryId)?.icon || "";
@@ -717,14 +758,121 @@ const TodoList = () => {
             <Menu className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-bold">할 일</h1>
-          <Button variant="ghost" size="icon">
-            <div className="grid grid-cols-3 gap-0.5 w-5 h-5">
-              {[...Array(9)].map((_, i) => (
-                <div key={i} className="w-1 h-1 rounded-full bg-foreground" />
-              ))}
-            </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setShowStatsPanel(!showStatsPanel)}
+            className={showStatsPanel ? "bg-primary/10" : ""}
+          >
+            {showStatsPanel ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <BarChart3 className="w-5 h-5" />
+            )}
           </Button>
         </div>
+
+        {/* Stats Panel */}
+        <AnimatePresence>
+          {showStatsPanel && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="overflow-hidden border-t border-border"
+            >
+              <div className="p-4 space-y-4 bg-card/50">
+                {/* 주간 완료율 & 오늘 진행상황 */}
+                <div className="flex items-center gap-4">
+                  {/* 원형 프로그레스 */}
+                  <div className="relative w-16 h-16 shrink-0">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
+                      <circle 
+                        cx="32" 
+                        cy="32" 
+                        r="28" 
+                        strokeWidth="6" 
+                        className="fill-none stroke-muted" 
+                      />
+                      <motion.circle 
+                        cx="32" 
+                        cy="32" 
+                        r="28" 
+                        strokeWidth="6"
+                        className="fill-none stroke-primary"
+                        strokeLinecap="round"
+                        initial={{ strokeDasharray: 176, strokeDashoffset: 176 }}
+                        animate={{ 
+                          strokeDasharray: 176, 
+                          strokeDashoffset: 176 - (176 * stats.taskCompletionRate / 100) 
+                        }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-lg font-bold">
+                      {stats.taskCompletionRate}%
+                    </span>
+                  </div>
+                  
+                  {/* 텍스트 정보 */}
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm text-muted-foreground">주간 완료율</p>
+                    <p className="text-lg font-semibold">
+                      {stats.completedTaskCount}/{stats.totalTaskCount}개 완료
+                    </p>
+                  </div>
+                </div>
+
+                {/* 카테고리 분포 */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">카테고리별 할 일</p>
+                  <div className="flex gap-0.5 h-3 rounded-full overflow-hidden bg-muted">
+                    {stats.categoryStats.map((cat) => (
+                      <motion.div
+                        key={cat.id}
+                        className={categoryBarColors[cat.id]}
+                        initial={{ width: 0 }}
+                        animate={{ 
+                          width: stats.totalTaskCount > 0 
+                            ? `${(cat.count / stats.totalTaskCount) * 100}%` 
+                            : "0%" 
+                        }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    {stats.categoryStats.map((cat) => (
+                      <span key={cat.id} className="flex items-center gap-0.5">
+                        {cat.icon} {cat.count}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 최고 습관 스트릭 */}
+                {stats.topStreakHabit && stats.maxStreak > 0 && (
+                  <motion.div 
+                    className="flex items-center gap-2 p-3 bg-orange-500/10 rounded-lg"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Flame className="w-5 h-5 text-orange-500 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{stats.topStreakHabit.content}</p>
+                      <p className="text-xs text-muted-foreground">최고 연속 기록</p>
+                    </div>
+                    <span className="text-lg font-bold text-orange-500 shrink-0">
+                      {stats.maxStreak}일
+                    </span>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Search */}
         <div className="px-4 pb-3">
