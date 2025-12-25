@@ -1,10 +1,11 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { Check, Plus } from "lucide-react";
+import { motion } from "framer-motion";
+import { X, Check } from "lucide-react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, isBefore, isAfter } from "date-fns";
 import { ko } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -17,22 +18,21 @@ interface TodoItem {
   endDate: string;
   completed: boolean;
   color: string;
-  category?: string;
 }
 
 const dummyTodos: TodoItem[] = [
-  { id: "1", title: "프로젝트 마감", startDate: "2025-12-05", endDate: "2025-12-07", completed: false, color: "#EF4444", category: "업무" },
-  { id: "2", title: "운동", startDate: "2025-12-10", endDate: "2025-12-10", completed: false, color: "#10B981", category: "건강" },
-  { id: "3", title: "팀 미팅", startDate: "2025-12-08", endDate: "2025-12-09", completed: true, color: "#F59E0B", category: "업무" },
-  { id: "4", title: "독서", startDate: "2025-12-15", endDate: "2025-12-15", completed: false, color: "#3B82F6", category: "자기계발" },
-  { id: "5", title: "여행", startDate: "2025-12-20", endDate: "2025-12-25", completed: false, color: "#22C55E", category: "개인" },
-  { id: "6", title: "연말 정산", startDate: "2025-12-28", endDate: "2025-12-31", completed: false, color: "#8B5CF6", category: "업무" },
-  { id: "7", title: "크리스마스 파티", startDate: "2025-12-25", endDate: "2025-12-25", completed: false, color: "#EC4899", category: "개인" },
-  { id: "8", title: "회의 준비", startDate: "2025-12-03", endDate: "2025-12-03", completed: true, color: "#06B6D4", category: "업무" },
-  { id: "9", title: "보고서 작성", startDate: "2025-12-12", endDate: "2025-12-14", completed: false, color: "#F97316", category: "업무" },
-  { id: "10", title: "코드 리뷰", startDate: "2025-12-18", endDate: "2025-12-19", completed: false, color: "#6366F1", category: "업무" },
-  { id: "11", title: "새해 준비", startDate: "2026-01-01", endDate: "2026-01-03", completed: false, color: "#EC4899", category: "개인" },
-  { id: "12", title: "신년 계획", startDate: "2026-01-05", endDate: "2026-01-05", completed: false, color: "#10B981", category: "자기계발" },
+  { id: "1", title: "프로젝트 마감", startDate: "2025-12-05", endDate: "2025-12-07", completed: false, color: "#EF4444" },
+  { id: "2", title: "운동", startDate: "2025-12-10", endDate: "2025-12-10", completed: false, color: "#10B981" },
+  { id: "3", title: "팀 미팅", startDate: "2025-12-08", endDate: "2025-12-09", completed: true, color: "#F59E0B" },
+  { id: "4", title: "독서", startDate: "2025-12-15", endDate: "2025-12-15", completed: false, color: "#3B82F6" },
+  { id: "5", title: "여행", startDate: "2025-12-20", endDate: "2025-12-25", completed: false, color: "#22C55E" },
+  { id: "6", title: "연말 정산", startDate: "2025-12-28", endDate: "2025-12-31", completed: false, color: "#8B5CF6" },
+  { id: "7", title: "크리스마스 파티", startDate: "2025-12-25", endDate: "2025-12-25", completed: false, color: "#EC4899" },
+  { id: "8", title: "회의 준비", startDate: "2025-12-03", endDate: "2025-12-03", completed: true, color: "#06B6D4" },
+  { id: "9", title: "보고서 작성", startDate: "2025-12-12", endDate: "2025-12-14", completed: false, color: "#F97316" },
+  { id: "10", title: "코드 리뷰", startDate: "2025-12-18", endDate: "2025-12-19", completed: false, color: "#6366F1" },
+  { id: "11", title: "새해 준비", startDate: "2026-01-01", endDate: "2026-01-03", completed: false, color: "#EC4899" },
+  { id: "12", title: "신년 계획", startDate: "2026-01-05", endDate: "2026-01-05", completed: false, color: "#10B981" },
 ];
 
 // 월별 캘린더 데이터 생성 (항상 5주로 맞춤)
@@ -212,25 +212,8 @@ const Calendar = () => {
     });
   }, [selectedDate, todos]);
 
-  // 카테고리별로 그룹화
-  const groupedTodos = useMemo(() => {
-    const groups: { [key: string]: TodoItem[] } = {};
-    selectedDateTodos.forEach(todo => {
-      const category = todo.category || "기타";
-      if (!groups[category]) {
-        groups[category] = [];
-      }
-      groups[category].push(todo);
-    });
-    return groups;
-  }, [selectedDateTodos]);
-
   const handleDateClick = (date: Date) => {
-    if (selectedDate && isSameDay(date, selectedDate)) {
-      setSelectedDate(null);
-    } else {
-      setSelectedDate(date);
-    }
+    setSelectedDate(date);
   };
 
   const handleDateDoubleClick = (date: Date) => {
@@ -255,11 +238,6 @@ const Calendar = () => {
   const HEADER_HEIGHT = 57;
   const WEEKDAY_HEIGHT = 32;
   const BOTTOM_NAV_HEIGHT = 80;
-  
-  // 날짜 선택 시 캘린더 높이를 줄임
-  const calendarHeight = selectedDate 
-    ? `calc(45vh - ${HEADER_HEIGHT + WEEKDAY_HEIGHT}px)` 
-    : `calc(100vh - ${HEADER_HEIGHT + WEEKDAY_HEIGHT + BOTTOM_NAV_HEIGHT}px)`;
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
@@ -298,20 +276,16 @@ const Calendar = () => {
         ))}
       </div>
 
-      {/* Scrollable Calendar Area - 날짜 선택 시 축소됨 */}
-      <motion.div 
+      {/* Scrollable Calendar Area - 각 월이 화면을 꽉 채움 */}
+      <div 
         ref={scrollContainerRef}
-        className="overflow-y-auto snap-y snap-mandatory"
+        className="flex-1 overflow-y-auto snap-y snap-mandatory"
         onScroll={handleScroll}
-        animate={{ height: calendarHeight }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
+        style={{ paddingBottom: BOTTOM_NAV_HEIGHT }}
       >
         {monthsData.map(({ monthDate, weeks }) => {
           const monthKey = format(monthDate, "yyyy-MM");
           const weekCount = weeks.length;
-          const monthHeight = selectedDate
-            ? `calc(45vh - ${HEADER_HEIGHT + WEEKDAY_HEIGHT}px)`
-            : `calc(100vh - ${HEADER_HEIGHT + WEEKDAY_HEIGHT + BOTTOM_NAV_HEIGHT}px)`;
           
           return (
             <div 
@@ -319,8 +293,8 @@ const Calendar = () => {
               ref={(el) => setMonthRef(monthKey, el)}
               className="snap-start"
               style={{ 
-                height: monthHeight,
-                minHeight: monthHeight
+                height: `calc(100vh - ${HEADER_HEIGHT + WEEKDAY_HEIGHT + BOTTOM_NAV_HEIGHT}px)`,
+                minHeight: `calc(100vh - ${HEADER_HEIGHT + WEEKDAY_HEIGHT + BOTTOM_NAV_HEIGHT}px)`
               }}
             >
               {/* Weeks - 화면을 균등 분할 */}
@@ -360,7 +334,7 @@ const Calendar = () => {
                                 className={cn(
                                   "w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium transition-colors",
                                   isToday && "bg-primary text-primary-foreground",
-                                  isSelected && !isToday && "bg-primary/20 border-2 border-primary",
+                                  isSelected && !isToday && "border-2 border-primary",
                                   !isToday && !isSelected && dayOfWeek === 0 && "text-red-500",
                                   !isToday && !isSelected && dayOfWeek === 6 && "text-blue-500"
                                 )}
@@ -420,118 +394,80 @@ const Calendar = () => {
             </div>
           );
         })}
-      </motion.div>
+      </div>
 
-      {/* 할 일 목록 영역 (날짜 선택 시 나타남) */}
-      <AnimatePresence>
-        {selectedDate && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: `calc(55vh - ${BOTTOM_NAV_HEIGHT}px)`, opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="bg-background border-t border-border overflow-hidden"
-          >
-            {/* 선택된 날짜 헤더 */}
-            <div className="px-4 py-3 border-b border-border bg-muted/30">
-              <h3 className="font-semibold text-foreground">
-                {format(selectedDate, "M월 d일 EEEE", { locale: ko })}
-              </h3>
+      {/* Bottom Sheet */}
+      <Sheet open={!!selectedDate} onOpenChange={(open) => !open && setSelectedDate(null)}>
+        <SheetContent side="bottom" className="h-[45vh] rounded-t-2xl">
+          <div className="flex flex-col h-full">
+            <div className="flex justify-center py-2">
+              <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
             </div>
 
-            {/* 할 일 목록 */}
-            <ScrollArea className="h-[calc(100%-52px)]">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={format(selectedDate, "yyyy-MM-dd")}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="px-4 py-3"
-                >
-                  {selectedDateTodos.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <p className="text-muted-foreground mb-4">이 날짜에 할 일이 없습니다</p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => navigate("/todo")}
-                      >
-                        <Plus className="w-4 h-4" />
-                        할 일 추가
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {Object.entries(groupedTodos).map(([category, categoryTodos]) => (
-                        <div key={category}>
-                          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                            {category}
-                          </h4>
-                          <div className="space-y-2">
-                            {categoryTodos.map((todo) => (
-                              <motion.div
-                                key={todo.id}
-                                whileTap={{ scale: 0.98 }}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
-                              >
-                                <div
-                                  className="w-1 h-10 rounded-full flex-shrink-0"
-                                  style={{ backgroundColor: todo.color }}
-                                />
-                                
-                                <button
-                                  onClick={() => handleToggleTodo(todo.id)}
-                                  className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
-                                  style={{ 
-                                    borderColor: todo.color,
-                                    backgroundColor: todo.completed ? todo.color : 'transparent'
-                                  }}
-                                >
-                                  {todo.completed && (
-                                    <Check className="w-4 h-4 text-white" />
-                                  )}
-                                </button>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <span className={cn(
-                                    "font-medium block truncate",
-                                    todo.completed && "line-through text-muted-foreground"
-                                  )}>
-                                    {todo.title}
-                                  </span>
-                                  {todo.startDate !== todo.endDate && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {format(new Date(todo.startDate), "M/d")} - {format(new Date(todo.endDate), "M/d")}
-                                    </span>
-                                  )}
-                                </div>
-                              </motion.div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+            <div className="flex items-center justify-between px-4 pb-3 border-b border-border">
+              <h3 className="font-semibold text-foreground">
+                {selectedDate && format(selectedDate, "M월 d일 EEEE", { locale: ko })}
+              </h3>
+              <button 
+                onClick={() => setSelectedDate(null)}
+                className="p-1 rounded-full hover:bg-muted transition-colors"
+              >
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+
+            <ScrollArea className="flex-1">
+              <div className="px-4 py-3 space-y-2">
+                {selectedDateTodos.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    등록된 할일이 없습니다
+                  </div>
+                ) : (
+                  selectedDateTodos.map((todo) => (
+                    <motion.div
+                      key={todo.id}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
+                    >
+                      <div
+                        className="w-1 h-10 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: todo.color }}
+                      />
                       
-                      {/* 할 일 추가 버튼 */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full gap-2 text-muted-foreground hover:text-foreground"
-                        onClick={() => navigate("/todo")}
+                      <button
+                        onClick={() => handleToggleTodo(todo.id)}
+                        className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                        style={{ 
+                          borderColor: todo.color,
+                          backgroundColor: todo.completed ? todo.color : 'transparent'
+                        }}
                       >
-                        <Plus className="w-4 h-4" />
-                        할 일 추가
-                      </Button>
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
+                        {todo.completed && (
+                          <Check className="w-4 h-4 text-white" />
+                        )}
+                      </button>
+                      
+                      <div className="flex-1 min-w-0">
+                        <span className={cn(
+                          "font-medium block truncate",
+                          todo.completed && "line-through text-muted-foreground"
+                        )}>
+                          {todo.title}
+                        </span>
+                        {todo.startDate !== todo.endDate && (
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(todo.startDate), "M/d")} - {format(new Date(todo.endDate), "M/d")}
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
             </ScrollArea>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
