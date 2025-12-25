@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
-// 할일 타입 정의 (연속 일정 지원)
 interface TodoItem {
   id: string;
   title: string;
@@ -21,7 +20,6 @@ interface TodoItem {
   color: string;
 }
 
-// 12월 더미 할일 데이터 (단일 + 연속 일정)
 const dummyTodos: TodoItem[] = [
   { id: "1", title: "프로젝트 마감", startDate: "2025-12-05", endDate: "2025-12-07", completed: false, color: "#EF4444" },
   { id: "2", title: "운동", startDate: "2025-12-10", endDate: "2025-12-10", completed: false, color: "#10B981" },
@@ -37,7 +35,7 @@ const dummyTodos: TodoItem[] = [
   { id: "12", title: "신년 계획", startDate: "2026-01-05", endDate: "2026-01-05", completed: false, color: "#10B981" },
 ];
 
-// 월별 캘린더 데이터 생성
+// 월별 캘린더 데이터 생성 (항상 5주로 맞춤)
 const generateMonthData = (monthDate: Date) => {
   const monthStart = startOfMonth(monthDate);
   const monthEnd = endOfMonth(monthStart);
@@ -70,7 +68,7 @@ const Calendar = () => {
   const [todos, setTodos] = useState<TodoItem[]>(dummyTodos);
   const [visibleMonth, setVisibleMonth] = useState(new Date(2025, 11, 1));
   
-  // 현재 월 기준 ±12개월 생성 (무한 스크롤 시뮬레이션)
+  // 현재 월 기준 ±12개월 생성
   const [monthsRange, setMonthsRange] = useState(() => {
     const baseMonth = new Date(2025, 11, 1);
     const months: Date[] = [];
@@ -80,12 +78,10 @@ const Calendar = () => {
     return months;
   });
 
-  // 월별 데이터 생성
   const monthsData = useMemo(() => {
     return monthsRange.map(month => generateMonthData(month));
   }, [monthsRange]);
 
-  // 할일 바 정보 계산
   const getTodoBarInfo = (todo: TodoItem, week: Date[]) => {
     const todoStart = new Date(todo.startDate);
     const todoEnd = new Date(todo.endDate);
@@ -130,20 +126,20 @@ const Calendar = () => {
     };
   };
 
-  // 스크롤 시 현재 보이는 월 감지
   const handleScroll = useCallback(() => {
     if (!scrollContainerRef.current) return;
 
     const container = scrollContainerRef.current;
     const containerRect = container.getBoundingClientRect();
-    const containerTop = containerRect.top + 100; // 헤더 높이 고려
+    const containerCenter = containerRect.top + containerRect.height / 2;
 
     let closestMonth: Date | null = null;
     let closestDistance = Infinity;
 
     monthRefs.current.forEach((element, key) => {
       const rect = element.getBoundingClientRect();
-      const distance = Math.abs(rect.top - containerTop);
+      const elementCenter = rect.top + rect.height / 2;
+      const distance = Math.abs(elementCenter - containerCenter);
       
       if (distance < closestDistance) {
         closestDistance = distance;
@@ -155,13 +151,12 @@ const Calendar = () => {
       setVisibleMonth(closestMonth);
     }
 
-    // 무한 스크롤: 상단/하단에 가까워지면 더 많은 월 추가
+    // 무한 스크롤
     const scrollTop = container.scrollTop;
     const scrollHeight = container.scrollHeight;
     const clientHeight = container.clientHeight;
 
     if (scrollTop < 500) {
-      // 상단에 더 많은 월 추가
       setMonthsRange(prev => {
         const firstMonth = prev[0];
         const newMonths: Date[] = [];
@@ -173,7 +168,6 @@ const Calendar = () => {
     }
 
     if (scrollHeight - scrollTop - clientHeight < 500) {
-      // 하단에 더 많은 월 추가
       setMonthsRange(prev => {
         const lastMonth = prev[prev.length - 1];
         const newMonths: Date[] = [];
@@ -185,7 +179,6 @@ const Calendar = () => {
     }
   }, [visibleMonth]);
 
-  // 오늘 버튼 클릭 시 오늘 날짜로 스크롤
   const scrollToToday = useCallback(() => {
     const todayMonthKey = format(today, "yyyy-MM");
     const element = monthRefs.current.get(todayMonthKey);
@@ -195,7 +188,6 @@ const Calendar = () => {
     }
   }, [today]);
 
-  // 초기 스크롤 위치 설정 (현재 월로)
   useEffect(() => {
     const timer = setTimeout(() => {
       const initialMonthKey = format(new Date(2025, 11, 1), "yyyy-MM");
@@ -207,7 +199,6 @@ const Calendar = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // 선택된 날짜의 할일 목록
   const selectedDateTodos = useMemo(() => {
     if (!selectedDate) return [];
     const dateStr = format(selectedDate, "yyyy-MM-dd");
@@ -235,7 +226,6 @@ const Calendar = () => {
     ));
   };
 
-  // 월 ref 저장
   const setMonthRef = useCallback((key: string, element: HTMLDivElement | null) => {
     if (element) {
       monthRefs.current.set(key, element);
@@ -244,10 +234,15 @@ const Calendar = () => {
     }
   }, []);
 
+  // 캘린더 영역 높이 계산 (헤더 57px + 요일 헤더 32px + 하단 nav 80px 제외)
+  const HEADER_HEIGHT = 57;
+  const WEEKDAY_HEIGHT = 32;
+  const BOTTOM_NAV_HEIGHT = 80;
+
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Fixed Header */}
-      <header className="sticky top-0 z-30 bg-background border-b border-border px-4 py-3">
+      <header className="flex-shrink-0 bg-background border-b border-border px-4 py-3" style={{ height: HEADER_HEIGHT }}>
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold">
             {format(visibleMonth, "yyyy년 M월", { locale: ko })}
@@ -265,12 +260,12 @@ const Calendar = () => {
       </header>
 
       {/* Fixed Weekday Header */}
-      <div className="grid grid-cols-7 border-b border-border bg-background sticky top-[57px] z-20">
+      <div className="flex-shrink-0 grid grid-cols-7 border-b border-border bg-background" style={{ height: WEEKDAY_HEIGHT }}>
         {WEEKDAYS.map((day, index) => (
           <div
             key={day}
             className={cn(
-              "py-2 text-center text-xs font-medium",
+              "flex items-center justify-center text-xs font-medium",
               index === 0 && "text-red-500",
               index === 6 && "text-blue-500",
               index !== 0 && index !== 6 && "text-muted-foreground"
@@ -281,115 +276,121 @@ const Calendar = () => {
         ))}
       </div>
 
-      {/* Scrollable Calendar Area */}
+      {/* Scrollable Calendar Area - 각 월이 화면을 꽉 채움 */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto snap-y snap-mandatory"
         onScroll={handleScroll}
+        style={{ paddingBottom: BOTTOM_NAV_HEIGHT }}
       >
         {monthsData.map(({ monthDate, weeks }) => {
           const monthKey = format(monthDate, "yyyy-MM");
+          const weekCount = weeks.length;
           
           return (
             <div 
               key={monthKey}
               ref={(el) => setMonthRef(monthKey, el)}
-              className="border-b-4 border-border/50"
+              className="snap-start"
+              style={{ 
+                height: `calc(100vh - ${HEADER_HEIGHT + WEEKDAY_HEIGHT + BOTTOM_NAV_HEIGHT}px)`,
+                minHeight: `calc(100vh - ${HEADER_HEIGHT + WEEKDAY_HEIGHT + BOTTOM_NAV_HEIGHT}px)`
+              }}
             >
-              {/* Month Label (inline) */}
-              <div className="px-4 py-2 bg-muted/30 text-sm font-medium text-muted-foreground">
-                {format(monthDate, "yyyy년 M월", { locale: ko })}
-              </div>
+              {/* Weeks - 화면을 균등 분할 */}
+              <div className="h-full flex flex-col">
+                {weeks.map((week, weekIndex) => {
+                  const weekTodos = todos.map(todo => ({
+                    todo,
+                    barInfo: getTodoBarInfo(todo, week)
+                  })).filter(item => item.barInfo !== null);
 
-              {/* Weeks */}
-              {weeks.map((week, weekIndex) => {
-                // 이 주에 표시할 할일들 계산
-                const weekTodos = todos.map(todo => ({
-                  todo,
-                  barInfo: getTodoBarInfo(todo, week)
-                })).filter(item => item.barInfo !== null);
+                  return (
+                    <div 
+                      key={weekIndex} 
+                      className="relative border-b border-border/30"
+                      style={{ flex: `1 1 ${100 / weekCount}%` }}
+                    >
+                      {/* 날짜 행 */}
+                      <div className="grid grid-cols-7 h-full">
+                        {week.map((day, dayIndex) => {
+                          const isCurrentMonth = isSameMonth(day, monthDate);
+                          const isToday = isSameDay(day, today);
+                          const isSelected = selectedDate && isSameDay(day, selectedDate);
+                          const dayOfWeek = day.getDay();
 
-                return (
-                  <div key={weekIndex} className="relative">
-                    {/* 날짜 행 */}
-                    <div className="grid grid-cols-7">
-                      {week.map((day, dayIndex) => {
-                        const isCurrentMonth = isSameMonth(day, monthDate);
-                        const isToday = isSameDay(day, today);
-                        const isSelected = selectedDate && isSameDay(day, selectedDate);
-                        const dayOfWeek = day.getDay();
-
-                        return (
-                          <motion.button
-                            key={dayIndex}
-                            onClick={() => handleDateClick(day)}
-                            onDoubleClick={() => handleDateDoubleClick(day)}
-                            whileTap={{ scale: 0.95 }}
-                            className={cn(
-                              "min-h-[90px] flex flex-col items-center pt-1 relative border-b border-r border-border/20",
-                              !isCurrentMonth && "opacity-40"
-                            )}
-                          >
-                            <span
+                          return (
+                            <motion.button
+                              key={dayIndex}
+                              onClick={() => handleDateClick(day)}
+                              onDoubleClick={() => handleDateDoubleClick(day)}
+                              whileTap={{ scale: 0.95 }}
                               className={cn(
-                                "w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium transition-colors",
-                                isToday && "bg-primary text-primary-foreground",
-                                isSelected && !isToday && "border-2 border-primary",
-                                !isToday && !isSelected && dayOfWeek === 0 && "text-red-500",
-                                !isToday && !isSelected && dayOfWeek === 6 && "text-blue-500"
+                                "h-full flex flex-col items-center pt-1 relative border-r border-border/20",
+                                !isCurrentMonth && "opacity-40"
                               )}
                             >
-                              {format(day, "d")}
-                            </span>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
+                              <span
+                                className={cn(
+                                  "w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium transition-colors",
+                                  isToday && "bg-primary text-primary-foreground",
+                                  isSelected && !isToday && "border-2 border-primary",
+                                  !isToday && !isSelected && dayOfWeek === 0 && "text-red-500",
+                                  !isToday && !isSelected && dayOfWeek === 6 && "text-blue-500"
+                                )}
+                              >
+                                {format(day, "d")}
+                              </span>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
 
-                    {/* 할일 바 오버레이 */}
-                    <div className="absolute top-8 left-0 right-0 px-0.5 pointer-events-none">
-                      {weekTodos.slice(0, 3).map(({ todo, barInfo }, idx) => {
-                        if (!barInfo) return null;
-                        const { startIdx, isRealStart, isRealEnd, span } = barInfo;
-                        const leftPercent = (startIdx / 7) * 100;
-                        const widthPercent = (span / 7) * 100;
+                      {/* 할일 바 오버레이 */}
+                      <div className="absolute top-8 left-0 right-0 px-0.5 pointer-events-none">
+                        {weekTodos.slice(0, 3).map(({ todo, barInfo }, idx) => {
+                          if (!barInfo) return null;
+                          const { startIdx, isRealStart, isRealEnd, span } = barInfo;
+                          const leftPercent = (startIdx / 7) * 100;
+                          const widthPercent = (span / 7) * 100;
 
-                        return (
-                          <div
-                            key={todo.id}
-                            className={cn(
-                              "h-[18px] flex items-center px-1 text-[10px] font-medium text-gray-800 truncate absolute",
-                              isRealStart && "rounded-l",
-                              isRealEnd && "rounded-r",
-                              !isRealStart && "rounded-l-none",
-                              !isRealEnd && "rounded-r-none"
-                            )}
-                            style={{
-                              backgroundColor: `${todo.color}30`,
-                              left: `${leftPercent}%`,
-                              top: `${idx * 20}px`,
-                              width: `calc(${widthPercent}% - 2px)`,
-                              opacity: todo.completed ? 0.6 : 1
-                            }}
+                          return (
+                            <div
+                              key={todo.id}
+                              className={cn(
+                                "h-[18px] flex items-center px-1 text-[10px] font-medium text-gray-800 truncate absolute",
+                                isRealStart && "rounded-l",
+                                isRealEnd && "rounded-r",
+                                !isRealStart && "rounded-l-none",
+                                !isRealEnd && "rounded-r-none"
+                              )}
+                              style={{
+                                backgroundColor: `${todo.color}30`,
+                                left: `${leftPercent}%`,
+                                top: `${idx * 20}px`,
+                                width: `calc(${widthPercent}% - 2px)`,
+                                opacity: todo.completed ? 0.6 : 1
+                              }}
+                            >
+                              {(isRealStart || startIdx === 0) && (
+                                <span className="truncate">{todo.title}</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {weekTodos.length > 3 && (
+                          <div 
+                            className="absolute text-[10px] text-muted-foreground pl-1"
+                            style={{ top: `${3 * 20}px` }}
                           >
-                            {(isRealStart || startIdx === 0) && (
-                              <span className="truncate">{todo.title}</span>
-                            )}
+                            +{weekTodos.length - 3}개
                           </div>
-                        );
-                      })}
-                      {weekTodos.length > 3 && (
-                        <div 
-                          className="absolute text-[10px] text-muted-foreground pl-1"
-                          style={{ top: `${3 * 20}px` }}
-                        >
-                          +{weekTodos.length - 3}개
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           );
         })}
@@ -399,12 +400,10 @@ const Calendar = () => {
       <Sheet open={!!selectedDate} onOpenChange={(open) => !open && setSelectedDate(null)}>
         <SheetContent side="bottom" className="h-[45vh] rounded-t-2xl">
           <div className="flex flex-col h-full">
-            {/* Handle bar */}
             <div className="flex justify-center py-2">
               <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
             </div>
 
-            {/* Header */}
             <div className="flex items-center justify-between px-4 pb-3 border-b border-border">
               <h3 className="font-semibold text-foreground">
                 {selectedDate && format(selectedDate, "M월 d일 EEEE", { locale: ko })}
@@ -417,7 +416,6 @@ const Calendar = () => {
               </button>
             </div>
 
-            {/* Todo list */}
             <ScrollArea className="flex-1">
               <div className="px-4 py-3 space-y-2">
                 {selectedDateTodos.length === 0 ? (
@@ -431,13 +429,11 @@ const Calendar = () => {
                       whileTap={{ scale: 0.98 }}
                       className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
                     >
-                      {/* Color bar */}
                       <div
                         className="w-1 h-10 rounded-full flex-shrink-0"
                         style={{ backgroundColor: todo.color }}
                       />
                       
-                      {/* Checkbox */}
                       <button
                         onClick={() => handleToggleTodo(todo.id)}
                         className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
@@ -451,7 +447,6 @@ const Calendar = () => {
                         )}
                       </button>
                       
-                      {/* Todo content */}
                       <div className="flex-1 min-w-0">
                         <span className={cn(
                           "font-medium block truncate",
